@@ -52,6 +52,10 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   display: flex; flex-direction: column; gap: 2px;
 }
 .player-item.is-turn { background: rgba(36,168,87,0.2); border: 1px solid rgba(36,168,87,0.5); }
+.player-item.is-turn {
+  box-shadow: 0 0 0 1px rgba(111,255,170,0.18), 0 0 18px rgba(36,168,87,0.22);
+  animation: turnPulse 1.4s ease-in-out infinite;
+}
 .player-item.is-me { border: 1px solid rgba(240,192,64,0.4); }
 .player-name { font-weight: 600; }
 .player-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
@@ -71,6 +75,25 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 .game-main {
   flex: 1; display: flex; flex-direction: column;
   position: relative; overflow: hidden;
+}
+
+.turn-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.62);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(10px);
+}
+.turn-banner.showing {
+  animation: bannerSlideFade 1.2s ease forwards;
 }
 
 /* ── 等待界面 ── */
@@ -179,6 +202,16 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   box-shadow: 0 8px 20px rgba(240,192,64,0.6);
   border-color: var(--gold);
 }
+.card.outgoing {
+  animation: cardOutgoing 0.28s ease forwards;
+}
+.card.deal-in {
+  animation: cardDealIn 0.32s ease-out;
+}
+.card.flip-in {
+  transform-origin: center center;
+  animation: cardFlipIn 0.26s ease-out;
+}
 .card.face-down {
   background: linear-gradient(135deg, #1a3a6e 25%, #2a5aae 100%);
   color: transparent;
@@ -265,6 +298,33 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 .chat-msg .system { color: var(--text-dim); font-style: italic; }
 .chat-input-row { display: flex; gap: 6px; margin-top: auto; }
 .chat-input-row input { flex: 1; padding: 7px 10px; font-size: 0.82rem; }
+
+@keyframes turnPulse {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+
+@keyframes bannerSlideFade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  18% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  82% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+}
+
+@keyframes cardOutgoing {
+  0% { opacity: 1; transform: translateY(-12px) scale(1); }
+  100% { opacity: 0; transform: translateY(-48px) scale(0.78); }
+}
+
+@keyframes cardDealIn {
+  0% { opacity: 0; transform: translateY(26px) scale(0.84); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cardFlipIn {
+  0% { transform: rotateY(90deg) scale(0.96); opacity: 0.75; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
 
 /* ── 响应式 ── */
 @media (max-width: 700px) {

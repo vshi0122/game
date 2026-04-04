@@ -18,6 +18,9 @@ const state = {
   communityCards: [],
   selectedCards: new Set(),  // 选中的手牌索引
   selectedTableCardIndex: null,
+  animatingPlaceCardIndex: null,
+  enteringTableCardIndexes: new Set(),
+  flippingTableCardIndexes: new Set(),
   gameState:  {},
 };
 
@@ -48,6 +51,7 @@ const deckCount      = $('deck-count');
 const resultCards    = $('result-cards');
 const btnContinueRound = $('btn-continue-round');
 const myPlacedCardsEl = $('my-placed-cards');
+const turnBanner     = $('turn-banner');
 
 // ── Socket 连接 ───────────────────────────────────────────────────
 const socket = io(window.SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -96,6 +100,7 @@ socket.on('game_started', (data) => {
   renderOpponents();
   renderCommunityCards(state.communityCards);
   updateGameInfo();
+  announceTurn(state.gameState?.currentTurn);
   addSystemMessage('游戏开始！');
 });
 
@@ -107,8 +112,24 @@ socket.on('deal_hand', ({ hand }) => {
 
 // 收到游戏状态更新（如轮次变化、公共牌变化）
 socket.on('state_update', (data) => {
+  const previousCards = state.communityCards;
+  const previousTurn = state.gameState?.currentTurn || null;
   if (data.gameState) state.gameState = data.gameState;
   if (data.communityCards) {
+    const nextCards = data.communityCards;
+    state.enteringTableCardIndexes = new Set();
+    state.flippingTableCardIndexes = new Set();
+    if (nextCards.length > previousCards.length) {
+      for (let i = previousCards.length; i < nextCards.length; i++) {
+        state.enteringTableCardIndexes.add(i);
+      }
+    }
+    const compareLength = Math.min(previousCards.length, nextCards.length);
+    for (let i = 0; i < compareLength; i++) {
+      if (previousCards[i]?.faceDown && !nextCards[i]?.faceDown) {
+        state.flippingTableCardIndexes.add(i);
+      }
+    }
     state.communityCards = data.communityCards;
     if (
       state.selectedTableCardIndex != null &&
@@ -121,6 +142,10 @@ socket.on('state_update', (data) => {
   if (data.players) { state.players = data.players; renderPlayerList(); renderOpponents(); }
   renderActionPanel();
   updateGameInfo();
+  const nextTurn = state.gameState?.currentTurn || null;
+  if (nextTurn && nextTurn !== previousTurn && !state.gameState?.awaitingRps) {
+    announceTurn(nextTurn);
+  }
 });
 
 // 仅自己可见的私人状态（自己的已放牌明细）
@@ -207,7 +232,8 @@ function renderMyHand() {
     const isRed = isCardRed(card);
     const colorText = getCardColorText(card);
     const selected = state.selectedCards.has(i);
-    return `<div class="card ${isRed ? 'red' : 'black'} ${selected ? 'selected' : ''}"
+    const outgoing = state.animatingPlaceCardIndex === i ? 'outgoing' : '';
+    return `<div class="card ${isRed ? 'red' : 'black'} ${selected ? 'selected' : ''} ${outgoing}" data-card-index="${i}"
                  onclick="toggleCard(${i})" title="${colorText}">
       <div class="card-corner-top">${colorText}</div>
       <div class="card-rank">${colorText}</div>
@@ -228,14 +254,16 @@ function renderCommunityCards(cards) {
       const revealMode = !!state.gameState?.revealMode;
       const revealable = revealableSet.has(index);
       const locked = revealMode && !revealable ? 'locked-face-down' : '';
+      const entering = state.enteringTableCardIndexes.has(index) ? 'deal-in' : '';
       const tip = revealMode && !revealable
         ? `背面牌 #${index + 1}（该玩家需先翻栈顶）`
         : `背面牌 #${index + 1}`;
-      return `<div class="card face-down ${selected} ${locked}" title="${tip}" onclick="toggleTableCard(${index})">${ownerTag}${orderTag}</div>`;
+      return `<div class="card face-down ${selected} ${locked} ${entering}" title="${tip}" onclick="toggleTableCard(${index})">${ownerTag}${orderTag}</div>`;
     }
     const isRed = isCardRed(card);
     const colorText = getCardColorText(card);
-    return `<div class="card ${isRed ? 'red' : 'black'}">
+    const flipped = state.flippingTableCardIndexes.has(index) ? 'flip-in' : '';
+    return `<div class="card ${isRed ? 'red' : 'black'} ${flipped}">
       ${ownerTag}
       ${orderTag}
       <div class="card-corner-top">${colorText}</div>
@@ -484,23 +512,36 @@ window.sendAction = function(action, extraData = {}) {
     addSystemMessage('请先选择 1 张场上的背面牌');
     return;
   }
-  const selectedCards = [...state.selectedCards].map(i => state.myHand[i]);
-  const selectedIndexes = [...state.selectedCards].sort((a, b) => a - b);
-  socket.emit('game_action', {
-    roomId:   state.roomId,
-    playerId: state.playerId,
-    action,
-    data: {
-      cards: selectedCards,
-      cardIndexes: selectedIndexes,
-      tableCardIndex: state.selectedTableCardIndex,
-      ...extraData,
-    },
-  });
-  state.selectedCards.clear();
-  if (action === 'reveal_table_card') state.selectedTableCardIndex = null;
-  renderMyHand();
-  renderCommunityCards(state.communityCards);
+
+  const emitAction = () => {
+    const selectedCards = [...state.selectedCards].map(i => state.myHand[i]);
+    const selectedIndexes = [...state.selectedCards].sort((a, b) => a - b);
+    socket.emit('game_action', {
+      roomId:   state.roomId,
+      playerId: state.playerId,
+      action,
+      data: {
+        cards: selectedCards,
+        cardIndexes: selectedIndexes,
+        tableCardIndex: state.selectedTableCardIndex,
+        ...extraData,
+      },
+    });
+    state.selectedCards.clear();
+    if (action === 'reveal_table_card') state.selectedTableCardIndex = null;
+    state.animatingPlaceCardIndex = null;
+    renderMyHand();
+    renderCommunityCards(state.communityCards);
+  };
+
+  if (action === 'place_face_down') {
+    state.animatingPlaceCardIndex = [...state.selectedCards][0];
+    renderMyHand();
+    setTimeout(emitAction, 260);
+    return;
+  }
+
+  emitAction();
 };
 
 function renderResultCards(cards) {
@@ -544,6 +585,20 @@ function renderMyPlacedCards(cards) {
       </div>
     `;
   }).join('');
+}
+
+function announceTurn(playerId) {
+  const player = state.players.find(p => p.id === playerId);
+  if (!player || !turnBanner) return;
+  turnBanner.textContent = `轮到 ${player.name}`;
+  turnBanner.classList.remove('hidden', 'showing');
+  void turnBanner.offsetWidth;
+  turnBanner.classList.add('showing');
+  clearTimeout(turnBanner._timer);
+  turnBanner._timer = setTimeout(() => {
+    turnBanner.classList.add('hidden');
+    turnBanner.classList.remove('showing');
+  }, 1180);
 }
 
 function showResultScreen(result, canContinue) {
