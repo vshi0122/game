@@ -47,6 +47,7 @@ const turnInfo       = $('turn-info');
 const deckCount      = $('deck-count');
 const resultCards    = $('result-cards');
 const btnContinueRound = $('btn-continue-round');
+const myPlacedCardsEl = $('my-placed-cards');
 
 // ── Socket 连接 ───────────────────────────────────────────────────
 const socket = io(window.SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -120,6 +121,11 @@ socket.on('state_update', (data) => {
   if (data.players) { state.players = data.players; renderPlayerList(); renderOpponents(); }
   renderActionPanel();
   updateGameInfo();
+});
+
+// 仅自己可见的私人状态（自己的已放牌明细）
+socket.on('private_state', (data) => {
+  renderMyPlacedCards(data?.myPlacedCards || []);
 });
 
 // 动作确认（规则引擎回调）
@@ -511,6 +517,32 @@ function renderResultCards(cards) {
       <div class="card-rank">${colorText}</div>
       <div class="card-corner-bottom">${colorText}</div>
     </div>`;
+  }).join('');
+}
+
+function renderMyPlacedCards(cards) {
+  if (!cards.length) {
+    myPlacedCardsEl.innerHTML = '<span class="hint">你还没有放过牌</span>';
+    return;
+  }
+
+  let topMyOrder = 0;
+  for (let i = cards.length - 1; i >= 0; i--) {
+    if (cards[i].faceDown) {
+      topMyOrder = cards[i].myOrder;
+      break;
+    }
+  }
+
+  myPlacedCardsEl.innerHTML = cards.map(c => {
+    const colorText = c.color === 'red' ? '红' : '黑';
+    const topTag = topMyOrder === c.myOrder ? '<span class="top-tag">栈顶</span>' : '';
+    return `
+      <div class="my-placed-item">
+        <div>${colorText}牌 ${topTag}</div>
+        <div class="meta">我的顺序 #${c.myOrder} · 场上顺序 #${c.globalOrder}</div>
+      </div>
+    `;
   }).join('');
 }
 

@@ -65,6 +65,28 @@ class BaseRule {
       gameState: this.room.gameState,
       communityCards: this._buildCommunityCards(),
     });
+
+    // 私有视图：每位玩家只收到自己的放牌明细（颜色与顺序）。
+    for (const player of this.room.players.values()) {
+      this.room._emit(player.id, 'private_state', this._buildPrivateState(player.id));
+    }
+  }
+
+  _buildPrivateState(playerId) {
+    const tableCards = this.room.gameState.tableCards || [];
+    const myPlacedCards = tableCards
+      .map((item, index) => ({ item, index }))
+      .filter(x => x.item.ownerId === playerId)
+      .map((x, idx) => ({
+        globalOrder: x.index + 1,
+        myOrder: idx + 1,
+        color: x.item.card.color,
+        faceDown: x.item.faceDown,
+      }));
+
+    return {
+      myPlacedCards,
+    };
   }
 
   _getInitialPlacedSet() {
