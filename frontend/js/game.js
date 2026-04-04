@@ -160,7 +160,7 @@ socket.on('private_state', (data) => {
 
 // 动作确认（规则引擎回调）
 socket.on('action_ack', (data) => {
-  if (data.message) addSystemMessage(data.message);
+  if (data.message) addSystemMessage(localizeServerLogMessage(data.message));
 });
 
 // 游戏结束
@@ -693,6 +693,66 @@ function addSystemMessage(message) {
   li.innerHTML = `<span class="system">· ${escHtml(message)}</span>`;
   chatMessages.appendChild(li);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function localizeServerLogMessage(message) {
+  if (!message) return '';
+  if (window.I18N?.getLang?.() !== 'en') return message;
+
+  const exactMap = {
+    '石头剪刀布平局，本轮参与者请重新选择': t('game.log.rpsDrawReplay'),
+    '石头剪刀布并列获胜，获胜玩家继续加赛': t('game.log.rpsTiePlayoff'),
+    '当前处于石头剪刀布阶段，请先完成选择': t('game.log.rpsPhaseOnly'),
+    '你不在本轮石头剪刀布参与名单中': t('game.log.notInRpsRound'),
+    '无效选择，请选择石头/剪刀/布': t('game.log.invalidRpsChoice'),
+    '已提交石头剪刀布选择': t('game.log.rpsSubmitted'),
+    '游戏开始后必须先完成一次声明': t('game.log.mustDeclareAfterStart'),
+    '当前是翻牌阶段，仅可执行翻牌操作': t('game.log.revealOnly'),
+    '只有声明者可以翻牌': t('game.log.onlyDeclarerReveal'),
+    '未轮到你的回合': t('game.log.notYourTurn'),
+    '开局阶段只能先扣置 1 张牌': t('game.log.onlyPlaceAtStart'),
+    '你已完成首次扣置，请等待其他玩家完成': t('game.log.placedWaitOthers'),
+    '你手中无牌，不能扣置': t('game.log.noHandCannotPlace'),
+    '请选择且仅选择 1 张手牌进行扣置': t('game.log.selectExactlyOneHandCard'),
+    '所选手牌无效': t('game.log.invalidHandCard'),
+    '所有玩家完成首次扣置前，不能声明': t('game.log.cannotDeclareBeforeInitialPlacement'),
+    '首个声明权不在你，请等待获胜玩家先声明': t('game.log.noFirstDeclareRight'),
+    '声明值必须是大于 0 的整数': t('game.log.declareMustPositiveInt'),
+    '所有玩家完成首次扣置前，不能选择过': t('game.log.cannotPassBeforeInitialPlacement'),
+    '当前已声明黑牌数为 0，不能选择过': t('game.log.cannotPassWhenDeclaredZero'),
+    '请选择 1 张有效的场上扣牌': t('game.log.selectValidTableCard'),
+    '该牌已翻开，请选择其他背面牌': t('game.log.cardAlreadyRevealed'),
+    '该玩家此牌下方仍有未翻开的牌，需先翻栈顶牌': t('game.log.mustRevealTopFirst'),
+    '该动作尚未实现': t('game.log.actionNotImplemented'),
+  };
+
+  if (exactMap[message]) return exactMap[message];
+
+  let m = message.match(/^(.*) 石头剪刀布获胜，请先声明$/);
+  if (m) return t('game.log.rpsWinnerFirstDeclare', { name: m[1] });
+
+  m = message.match(/^(.*) 扣置了 1 张牌$/);
+  if (m) return t('game.log.playerPlacedOne', { name: m[1] });
+
+  m = message.match(/^(.*) 声明了黑牌数量：([0-9]+)$/);
+  if (m) return t('game.log.playerDeclaredBlack', { name: m[1], count: m[2] });
+
+  m = message.match(/^(.*) 选择了过$/);
+  if (m) return t('game.log.playerPassed', { name: m[1] });
+
+  m = message.match(/^翻开了 1 张牌，颜色是(红|黑)$/);
+  if (m) {
+    const color = m[1] === '红' ? t('game.card.red') : t('game.card.black');
+    return t('game.log.revealedOneColor', { color });
+  }
+
+  m = message.match(/^已翻黑牌 ([0-9]+)\/([0-9]+)$/);
+  if (m) return t('game.log.revealedBlackProgress', { current: m[1], target: m[2] });
+
+  m = message.match(/^声明失败：必须大于当前声明值 ([0-9]+)$/);
+  if (m) return t('game.log.declareMustGreater', { current: m[1] });
+
+  return message;
 }
 
 function escHtml(str) {
