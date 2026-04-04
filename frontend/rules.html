@@ -27,55 +27,64 @@
 </head>
 <body>
   <div class="bg-overlay"></div>
+  <div class="producer-badge">Producer: vincent</div>
 
   <main class="rules-wrap">
     <section class="card-panel">
-      <h1>🃏 规则说明</h1>
-      <p class="rules-meta">该页面可在大厅和游戏中随时打开查看（新标签页）。</p>
+      <div class="lang-switch" style="position:static;justify-content:flex-end;">
+        <label for="lang-select" id="lang-label">语言</label>
+        <select id="lang-select">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+        </select>
+      </div>
+      <h1 id="rules-title">🃏 规则说明</h1>
+      <p class="rules-meta" id="rules-subtitle">该页面可在大厅和游戏中随时打开查看（新标签页）。</p>
       <div class="rules-top-actions" style="margin-top:10px;">
-        <a class="btn btn-ghost btn-sm" href="index.html">返回大厅</a>
-        <a class="btn btn-ghost btn-sm" href="game.html">返回游戏页</a>
+        <a id="btn-back-lobby" class="btn btn-ghost btn-sm" href="index.html">返回大厅</a>
+        <a id="btn-back-game" class="btn btn-ghost btn-sm" href="game.html">返回游戏页</a>
       </div>
     </section>
 
     <section class="card-panel rule-block">
-      <h2>1. 牌与开局</h2>
+      <h2 id="rule1-title">1. 牌与开局</h2>
       <ul>
-        <li>每位玩家开局获得 4 张牌，固定为 3 黑 1 红。</li>
-        <li>开局阶段每位玩家必须先手动扣置 1 张牌到场上。</li>
-        <li>所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。</li>
+        <li id="rule1-1">每位玩家开局获得 4 张牌，固定为 3 黑 1 红。</li>
+        <li id="rule1-2">开局阶段每位玩家必须先手动扣置 1 张牌到场上。</li>
+        <li id="rule1-3">所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。</li>
       </ul>
     </section>
 
     <section class="card-panel rule-block">
-      <h2>2. 回合可执行动作</h2>
+      <h2 id="rule2-title">2. 回合可执行动作</h2>
       <ol>
-        <li>声明黑牌数量：若场上已有声明值 x，新声明必须大于 x。</li>
-        <li>扣置 1 张牌：从手牌选 1 张扣置到场上，并将已声明值归 0。</li>
-        <li>过：仅当当前声明值大于 0 时可以选择过。</li>
+        <li id="rule2-1">声明黑牌数量：若场上已有声明值 x，新声明必须大于 x。</li>
+        <li id="rule2-2">扣置 1 张牌：从手牌选 1 张扣置到场上，并将已声明值归 0。</li>
+        <li id="rule2-3">过：仅当当前声明值大于 0 时可以选择过。</li>
       </ol>
-      <p class="rules-meta">补充：手中无牌时不能扣置。</p>
+      <p class="rules-meta" id="rule2-note">补充：手中无牌时不能扣置。</p>
     </section>
 
     <section class="card-panel rule-block">
-      <h2>3. 翻牌与胜负</h2>
+      <h2 id="rule3-title">3. 翻牌与胜负</h2>
       <ul>
-        <li>当已声明值大于 0，且除声明者外其他玩家都选择过时，进入翻牌阶段。</li>
-        <li>仅声明者可翻牌，且必须按每位玩家的“栈顶顺序”翻牌，不能跳层。</li>
-        <li>翻到红牌立即失败。</li>
-        <li>当已翻黑牌数达到声明值即成功。</li>
-        <li>若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。</li>
+        <li id="rule3-1">当已声明值大于 0，且除声明者外其他玩家都选择过时，进入翻牌阶段。</li>
+        <li id="rule3-2">仅声明者可翻牌，且必须按每位玩家的“栈顶顺序”翻牌，不能跳层。</li>
+        <li id="rule3-3">翻到红牌立即失败。</li>
+        <li id="rule3-4">当已翻黑牌数达到声明值即成功。</li>
+        <li id="rule3-5">若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。</li>
       </ul>
     </section>
 
     <section class="card-panel rule-block">
-      <h2>4. 多轮继续模式</h2>
+      <h2 id="rule4-title">4. 多轮继续模式</h2>
       <ul>
-        <li>创建房间时可开启“继续游戏模式”。</li>
-        <li>可设置成功次数和失败次数阈值（例如成功 2 次或失败 2 次结束整场）。</li>
-        <li>每轮结算后若未达到阈值，房主可点击“继续下一轮”。</li>
+        <li id="rule4-1">创建房间时可开启“继续游戏模式”。</li>
+        <li id="rule4-2">可设置成功次数和失败次数阈值（例如成功 2 次或失败 2 次结束整场）。</li>
+        <li id="rule4-3">每轮结算后若未达到阈值，房主可点击“继续下一轮”。</li>
       </ul>
     </section>
   </main>
+  <script src="js/i18n.js"></script>
 </body>
 </html>

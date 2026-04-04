@@ -6,6 +6,7 @@
 let socket = null;
 let myPlayerId = null;
 let myRoomId = null;
+let latestRooms = [];
 
 // ── DOM 引用 ──────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -23,6 +24,7 @@ const btnJoin          = $('btn-join');
 const btnRefresh       = $('btn-refresh');
 const roomList         = $('room-list');
 const statusBar        = $('status-bar');
+const t = (key, vars) => (window.I18N ? window.I18N.t(key, vars) : key);
 
 // ── 工具函数 ──────────────────────────────────────────
 function showStatus(msg, type = '') {
@@ -36,7 +38,7 @@ function showStatus(msg, type = '') {
 
 function getPlayerName() {
   const name = playerNameInput.value.trim();
-  if (!name) { showStatus('请先输入玩家名称', 'error'); return null; }
+  if (!name) { showStatus(t('lobby.needName'), 'error'); return null; }
   return name;
 }
 
@@ -45,12 +47,12 @@ function connectSocket() {
   socket = io(window.SERVER_URL, { transports: ['websocket', 'polling'] });
 
   socket.on('connect', () => {
-    showStatus('已连接到服务器', 'success');
+    showStatus(t('lobby.connected'), 'success');
     fetchRooms();
   });
 
   socket.on('connect_error', () => {
-    showStatus('无法连接到服务器，请检查后端是否运行', 'error');
+    showStatus(t('lobby.connectError'), 'error');
   });
 
   return socket;
@@ -69,11 +71,11 @@ btnCreate.addEventListener('click', () => {
   if (!playerName) return;
 
   const s = connectSocket();
-  showStatus('正在创建房间…');
+  showStatus(t('lobby.creatingRoom'));
 
   s.emit('create_room', {
     playerName,
-    roomName: roomNameInput.value.trim() || `${playerName} 的房间`,
+    roomName: roomNameInput.value.trim() || t('lobby.defaultRoomName', { name: playerName }),
     maxPlayers: parseInt(maxPlayersInput.value, 10) || 4,
     password: createPwInput.value,
     gameConfig: {
@@ -85,7 +87,7 @@ btnCreate.addEventListener('click', () => {
     if (res.success) {
       navigateToGame(res.roomId, res.playerId, playerName);
     } else {
-      showStatus(`创建失败：${res.error}`, 'error');
+      showStatus(t('lobby.createFailed', { error: res.error }), 'error');
     }
   });
 });
@@ -98,19 +100,19 @@ function joinByInput() {
   const playerName = getPlayerName();
   if (!playerName) return;
   const roomId = roomIdInput.value.trim().toUpperCase();
-  if (roomId.length !== 6) { showStatus('请输入 6 位房间 ID', 'error'); return; }
+  if (roomId.length !== 6) { showStatus(t('lobby.needRoomId'), 'error'); return; }
   doJoin(roomId, playerName, joinPwInput.value);
 }
 
 function doJoin(roomId, playerName, password = '') {
   const s = connectSocket();
-  showStatus('正在加入房间…');
+  showStatus(t('lobby.joiningRoom'));
 
   s.emit('join_room', { roomId, playerName, password }, (res) => {
     if (res.success) {
       navigateToGame(roomId, res.playerId, playerName);
     } else {
-      showStatus(`加入失败：${res.error}`, 'error');
+      showStatus(t('lobby.joinFailed', { error: res.error }), 'error');
     }
   });
 }
@@ -121,8 +123,8 @@ btnRefresh.addEventListener('click', fetchRooms);
 async function fetchRooms() {
   try {
     const resp = await fetch(`${window.SERVER_URL}/api/rooms`);
-    const rooms = await resp.json();
-    renderRoomList(rooms);
+    latestRooms = await resp.json();
+    renderRoomList(latestRooms);
   } catch {
     // 静默失败，不干扰用户
   }
@@ -130,16 +132,16 @@ async function fetchRooms() {
 
 function renderRoomList(rooms) {
   if (!rooms.length) {
-    roomList.innerHTML = '<li class="empty-hint">暂无公开房间</li>';
+    roomList.innerHTML = `<li class="empty-hint">${t('index.noRooms')}</li>`;
     return;
   }
   roomList.innerHTML = rooms.map(r => `
     <li class="room-item">
       <div class="room-info">
         <div>${r.roomName}</div>
-        <div class="room-meta">ID: ${r.roomId} · ${r.playerCount}/${r.maxPlayers} 人</div>
+        <div class="room-meta">ID: ${r.roomId} · ${t('index.peopleCount', { count: `${r.playerCount}/${r.maxPlayers}` })}</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="quickJoin('${r.roomId}')">加入</button>
+      <button class="btn btn-ghost btn-sm" onclick="quickJoin('${r.roomId}')">${t('index.join')}</button>
     </li>
   `).join('');
 }
@@ -171,4 +173,9 @@ window.quickJoin = function(roomId) {
   };
   continueModeInput.addEventListener('change', updateContinueModeInputs);
   updateContinueModeInputs();
+
+  window.addEventListener('lang_changed', () => {
+    if (window.I18N) window.I18N.applyPage();
+    renderRoomList(latestRooms);
+  });
 })();

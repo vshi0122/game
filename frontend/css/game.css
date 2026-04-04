@@ -13,7 +13,24 @@
   flex-shrink: 0;
 }
 .game-header h1 { font-size: 1.3rem; color: var(--gold); }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .room-label { font-size: 0.85rem; color: var(--text-dim); margin-right: 10px; }
+.lang-inline {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+.lang-inline-select {
+  background: rgba(255,255,255,0.08);
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
 .phase-badge {
   display: inline-block; padding: 3px 10px; border-radius: 50px;
   font-size: 0.78rem; font-weight: 600;
@@ -330,6 +347,7 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 @media (max-width: 700px) {
   aside { width: 140px; }
   .card { width: 50px; height: 72px; font-size: 0.85rem; }
+  .lang-inline { display: none; }
 }
 @media (max-width: 500px) {
   .player-sidebar, .chat-sidebar { display: none; }

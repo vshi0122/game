@@ -21,6 +21,7 @@ const state = {
   animatingPlaceCardIndex: null,
   enteringTableCardIndexes: new Set(),
   flippingTableCardIndexes: new Set(),
+  myPlacedCards: [],
   gameState:  {},
 };
 
@@ -52,6 +53,7 @@ const resultCards    = $('result-cards');
 const btnContinueRound = $('btn-continue-round');
 const myPlacedCardsEl = $('my-placed-cards');
 const turnBanner     = $('turn-banner');
+const t = (key, vars) => (window.I18N ? window.I18N.t(key, vars) : key);
 
 // ── Socket 连接 ───────────────────────────────────────────────────
 const socket = io(window.SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -72,7 +74,7 @@ socket.on('connect', () => {
 });
 
 socket.on('disconnect', () => {
-  addSystemMessage('与服务器断开连接，正在重连…');
+  addSystemMessage(t('game.msg.disconnected'));
 });
 
 // ── 房间/游戏事件 ─────────────────────────────────────────────────
@@ -88,7 +90,7 @@ socket.on('room_update', (data) => {
 });
 
 socket.on('player_left', ({ playerName }) => {
-  addSystemMessage(`${playerName} 离开了房间`);
+  addSystemMessage(t('game.msg.playerLeft', { name: playerName }));
 });
 
 socket.on('game_started', (data) => {
@@ -101,7 +103,7 @@ socket.on('game_started', (data) => {
   renderCommunityCards(state.communityCards);
   updateGameInfo();
   announceTurn(state.gameState?.currentTurn);
-  addSystemMessage('游戏开始！');
+  addSystemMessage(t('game.msg.started'));
 });
 
 // 收到自己的手牌（私发）
@@ -150,7 +152,8 @@ socket.on('state_update', (data) => {
 
 // 仅自己可见的私人状态（自己的已放牌明细）
 socket.on('private_state', (data) => {
-  renderMyPlacedCards(data?.myPlacedCards || []);
+  state.myPlacedCards = data?.myPlacedCards || [];
+  renderMyPlacedCards(state.myPlacedCards);
 });
 
 // 动作确认（规则引擎回调）
@@ -169,7 +172,7 @@ socket.on('round_over', (result) => {
 
 socket.on('match_continued', () => {
   showScreen('game');
-  addSystemMessage('下一轮已开始');
+  addSystemMessage(t('game.msg.nextRound'));
 });
 
 // 聊天消息
@@ -179,8 +182,7 @@ socket.on('chat_message', ({ playerName, message }) => {
 
 // ── UI 渲染 ───────────────────────────────────────────────────────
 function renderPhase(phase) {
-  const labels = { waiting: '等待中', ready: '准备', playing: '游戏中', ended: '已结束' };
-  phaseBadge.textContent = labels[phase] || phase;
+  phaseBadge.textContent = t(`game.phase.${phase}`);
   phaseBadge.className   = `phase-badge ${phase}`;
 }
 
@@ -193,10 +195,10 @@ function renderPlayerList() {
     return `<li class="player-item ${isMe ? 'is-me' : ''} ${isTurn ? 'is-turn' : ''}">
       <span class="player-name">${p.name}</span>
       <div class="player-tags">
-        ${isHost ? '<span class="tag host">房主</span>' : ''}
-        ${isMe   ? '<span class="tag me">我</span>'   : ''}
-        ${p.ready && state.phase === 'waiting' ? '<span class="tag ready">已准备</span>' : ''}
-        ${state.phase === 'playing' ? `<span class="tag">${p.cardCount} 张</span>` : ''}
+        ${isHost ? `<span class="tag host">${t('game.tag.host')}</span>` : ''}
+        ${isMe   ? `<span class="tag me">${t('game.tag.me')}</span>`   : ''}
+        ${p.ready && state.phase === 'waiting' ? `<span class="tag ready">${t('game.tag.ready')}</span>` : ''}
+        ${state.phase === 'playing' ? `<span class="tag">${t('game.tag.cards', { count: p.cardCount })}</span>` : ''}
       </div>
     </li>`;
   }).join('');
@@ -219,7 +221,7 @@ function renderOpponents() {
   const opponents = state.players.filter(p => p.id !== state.playerId);
   opponentsArea.innerHTML = opponents.map(p => `
     <div class="opponent-slot">
-      <span class="opponent-name">${p.name} (${p.cardCount} 张)</span>
+      <span class="opponent-name">${p.name} (${t('game.tag.cards', { count: p.cardCount })})</span>
       <div class="opponent-cards">
         ${Array.from({ length: Math.min(p.cardCount, 7) }, () => '<div class="card-back-mini"></div>').join('')}
       </div>
@@ -245,8 +247,8 @@ function renderMyHand() {
 function renderCommunityCards(cards) {
   const revealableSet = getRevealableTableIndexes(cards);
   communityCards.innerHTML = cards.map((card, index) => {
-    const ownerName = card.ownerName || '未知';
-    const mineSuffix = card.ownerId === state.playerId ? ' (我)' : '';
+    const ownerName = card.ownerName || t('game.table.unknown');
+    const mineSuffix = card.ownerId === state.playerId ? t('game.table.mine') : '';
     const ownerTag = `<span class="table-card-owner">${ownerName}${mineSuffix}</span>`;
     const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
     if (card.faceDown) {
@@ -256,8 +258,8 @@ function renderCommunityCards(cards) {
       const locked = revealMode && !revealable ? 'locked-face-down' : '';
       const entering = state.enteringTableCardIndexes.has(index) ? 'deal-in' : '';
       const tip = revealMode && !revealable
-        ? `背面牌 #${index + 1}（该玩家需先翻栈顶）`
-        : `背面牌 #${index + 1}`;
+        ? t('game.table.faceDownLocked', { index: index + 1 })
+        : t('game.table.faceDown', { index: index + 1 });
       return `<div class="card face-down ${selected} ${locked} ${entering}" title="${tip}" onclick="toggleTableCard(${index})">${ownerTag}${orderTag}</div>`;
     }
     const isRed = isCardRed(card);
@@ -293,26 +295,34 @@ function isCardRed(card) {
 }
 
 function getCardColorText(card) {
-  return isCardRed(card) ? '红' : '黑';
+  return isCardRed(card) ? t('game.card.red') : t('game.card.black');
 }
 
 function updateGameInfo() {
   const gs = state.gameState;
   const currentPlayer = state.players.find(p => p.id === gs?.currentTurn);
   if (gs?.awaitingRps) {
-    turnInfo.textContent = '阶段：石头剪刀布决首声明';
+    turnInfo.textContent = t('game.turn.rps');
   } else {
-    turnInfo.textContent  = `轮到：${currentPlayer ? currentPlayer.name : '-'}`;
+    turnInfo.textContent  = t('game.turn.now', { name: currentPlayer ? currentPlayer.name : '-' });
   }
   const declared = Number.isInteger(gs?.declaredBlack) ? gs.declaredBlack : 0;
   const declaredBy = gs?.declaredBy ? state.players.find(p => p.id === gs.declaredBy)?.name : null;
   const revealedBlack = Number.isInteger(gs?.revealedBlack) ? gs.revealedBlack : 0;
   if (gs?.revealMode) {
-    deckCount.textContent = `场牌 ${state.communityCards.length} 张 · 翻牌中 ${revealedBlack}/${declared}（声明者：${declaredBy || '-'}）`;
+    deckCount.textContent = t('game.table.deckInfoReveal', {
+      count: state.communityCards.length,
+      revealed: revealedBlack,
+      declared,
+      name: declaredBy || '-'
+    });
   } else {
-    deckCount.textContent = declared > 0
-      ? `场牌 ${state.communityCards.length} 张 · 已声明黑牌：${declared}${declaredBy ? `（${declaredBy}）` : ''}`
-      : `场牌 ${state.communityCards.length} 张 · 已声明黑牌：0`;
+    const by = declaredBy ? t('game.table.by', { name: declaredBy }) : '';
+    deckCount.textContent = t('game.table.deckInfoDeclared', {
+      count: state.communityCards.length,
+      declared,
+      by
+    });
   }
 }
 
@@ -323,10 +333,10 @@ function updateGameInfo() {
 function renderActionPanel(actions = []) {
   if (!actions.length) {
     actions = [
-      { label: '扣置 1 张', action: 'place_face_down' },
-      { label: '翻开 1 张', action: 'reveal_table_card' },
-      { label: '声明', action: 'declare' },
-      { label: '过',   action: 'pass' },
+      { label: t('game.action.place'), action: 'place_face_down' },
+      { label: t('game.action.reveal'), action: 'reveal_table_card' },
+      { label: t('game.action.declare'), action: 'declare' },
+      { label: t('game.action.pass'), action: 'pass' },
     ];
   }
 
@@ -345,13 +355,13 @@ function renderActionPanel(actions = []) {
 
   if (isAwaitingRps) {
     if (!inRpsParticipants) {
-      actionPanel.innerHTML = '<span class="hint">等待石头剪刀布结果</span>';
+      actionPanel.innerHTML = `<span class="hint">${t('game.msg.waitRps')}</span>`;
       return;
     }
     actionPanel.innerHTML = `
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'rock' })">石头</button>
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'scissors' })">剪刀</button>
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'paper' })">布</button>
+      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'rock' })">${t('game.action.rock')}</button>
+      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'scissors' })">${t('game.action.scissors')}</button>
+      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'paper' })">${t('game.action.paper')}</button>
     `;
     return;
   }
@@ -359,7 +369,7 @@ function renderActionPanel(actions = []) {
   // 首次声明阶段：所有玩家都只显示“声明”。
   if (isInitialDeclarePhase) {
     if (forcedFirstDeclarer && forcedFirstDeclarer !== state.playerId) {
-      actionPanel.innerHTML = '<span class="hint">等待首声明玩家操作</span>';
+      actionPanel.innerHTML = `<span class="hint">${t('game.msg.waitFirstDeclarer')}</span>`;
       return;
     }
     actions = actions.filter(a => a.action === 'declare');
@@ -373,7 +383,7 @@ function renderActionPanel(actions = []) {
 
   // 非首次声明阶段，没轮到自己不显示任何操作。
   if (!isMyTurn) {
-    actionPanel.innerHTML = '<span class="hint">等待你的回合</span>';
+    actionPanel.innerHTML = `<span class="hint">${t('game.msg.waitTurn')}</span>`;
     return;
   }
 
@@ -406,7 +416,7 @@ function renderActionPanel(actions = []) {
   }
 
   if (!actions.length) {
-    actionPanel.innerHTML = '<span class="hint">当前阶段无可执行操作</span>';
+    actionPanel.innerHTML = `<span class="hint">${t('game.msg.noAction')}</span>`;
     return;
   }
 
@@ -433,7 +443,7 @@ window.toggleTableCard = function(index) {
   if (state.gameState?.revealMode) {
     const revealableSet = getRevealableTableIndexes(state.communityCards);
     if (!revealableSet.has(index)) {
-      addSystemMessage('该玩家需先翻栈顶背面牌');
+      addSystemMessage(t('game.table.stackTop'));
       return;
     }
   }
@@ -457,11 +467,11 @@ window.sendAction = function(action, extraData = {}) {
 
   if (isAwaitingRps) {
     if (action !== 'rps_pick') {
-      addSystemMessage('当前是石头剪刀布阶段');
+      addSystemMessage(t('game.msg.rpsPhase'));
       return;
     }
     if (!inRpsParticipants) {
-      addSystemMessage('你不在本轮石头剪刀布参与者中');
+      addSystemMessage(t('game.msg.notInRps'));
       return;
     }
   }
@@ -471,45 +481,45 @@ window.sendAction = function(action, extraData = {}) {
     !isMyTurn &&
     !(isInitialDeclarePhase && action === 'declare')
   ) {
-    addSystemMessage('未轮到你的回合');
+    addSystemMessage(t('game.msg.notYourTurn'));
     return;
   }
 
   if (isInitialDeclarePhase && action === 'declare' && forcedFirstDeclarer && forcedFirstDeclarer !== state.playerId) {
-    addSystemMessage('首个声明权不在你，请等待获胜玩家先声明');
+    addSystemMessage(t('game.msg.noFirstDeclareRight'));
     return;
   }
 
   if (action === 'declare') {
     const currentDeclared = Number.isInteger(state.gameState?.declaredBlack) ? state.gameState.declaredBlack : 0;
-    const input = window.prompt(`请输入要声明的黑牌数量（当前为 ${currentDeclared}，必须更大）`);
+    const input = window.prompt(t('game.msg.promptDeclare', { current: currentDeclared }));
     if (input == null) return;
     const value = Number.parseInt(input.trim(), 10);
     if (!Number.isInteger(value) || value < 1) {
-      addSystemMessage('声明值必须是大于 0 的整数');
+      addSystemMessage(t('game.msg.declareInteger'));
       return;
     }
     if (value <= currentDeclared) {
-      addSystemMessage(`声明失败：必须大于当前声明值 ${currentDeclared}`);
+      addSystemMessage(t('game.msg.declareTooSmall', { current: currentDeclared }));
       return;
     }
     extraData = { ...extraData, declaredBlack: value };
   }
 
   if (action === 'place_face_down' && state.selectedCards.size !== 1) {
-    addSystemMessage('请先选择且仅选择 1 张手牌');
+    addSystemMessage(t('game.msg.selectOneCard'));
     return;
   }
   if (action === 'pass' && (state.gameState?.declaredBlack || 0) === 0) {
-    addSystemMessage('当前已声明黑牌数为 0，不能选择过');
+    addSystemMessage(t('game.msg.passNotAllowed'));
     return;
   }
   if (action === 'place_face_down' && !state.myHand.length) {
-    addSystemMessage('你手中无牌，不能扣置');
+    addSystemMessage(t('game.msg.noHandCard'));
     return;
   }
   if (action === 'reveal_table_card' && state.selectedTableCardIndex == null) {
-    addSystemMessage('请先选择 1 张场上的背面牌');
+    addSystemMessage(t('game.table.noSelection'));
     return;
   }
 
@@ -563,7 +573,7 @@ function renderResultCards(cards) {
 
 function renderMyPlacedCards(cards) {
   if (!cards.length) {
-    myPlacedCardsEl.innerHTML = '<span class="hint">你还没有放过牌</span>';
+    myPlacedCardsEl.innerHTML = `<span class="hint">${t('game.table.none')}</span>`;
     return;
   }
 
@@ -576,12 +586,12 @@ function renderMyPlacedCards(cards) {
   }
 
   myPlacedCardsEl.innerHTML = cards.map(c => {
-    const colorText = c.color === 'red' ? '红' : '黑';
-    const topTag = topMyOrder === c.myOrder ? '<span class="top-tag">栈顶</span>' : '';
+    const colorText = c.color === 'red' ? t('game.card.red') : t('game.card.black');
+    const topTag = topMyOrder === c.myOrder ? `<span class="top-tag">${t('game.table.top')}</span>` : '';
     return `
       <div class="my-placed-item">
-        <div>${colorText}牌 ${topTag}</div>
-        <div class="meta">我的顺序 #${c.myOrder} · 场上顺序 #${c.globalOrder}</div>
+        <div>${c.color === 'red' ? t('game.card.redLabel') : t('game.card.blackLabel')} ${topTag}</div>
+        <div class="meta">${t('game.table.myOrder', { myOrder: c.myOrder, globalOrder: c.globalOrder })}</div>
       </div>
     `;
   }).join('');
@@ -590,7 +600,7 @@ function renderMyPlacedCards(cards) {
 function announceTurn(playerId) {
   const player = state.players.find(p => p.id === playerId);
   if (!player || !turnBanner) return;
-  turnBanner.textContent = `轮到 ${player.name}`;
+  turnBanner.textContent = t('game.turn.banner', { name: player.name });
   turnBanner.classList.remove('hidden', 'showing');
   void turnBanner.offsetWidth;
   turnBanner.classList.add('showing');
@@ -603,11 +613,11 @@ function announceTurn(playerId) {
 
 function showResultScreen(result, canContinue) {
   showScreen('result');
-  $('result-title').textContent = result.title || '本轮结束';
+  $('result-title').textContent = result.title || t('game.result.roundOver');
   const statsLine = Array.isArray(result.stats) && result.stats.length
-    ? `\n战绩：${result.stats.map(s => `${s.name} 成功${s.successCount}/失败${s.failCount}`).join(' | ')}`
+    ? `\n${t('game.result.stats', { line: result.stats.map(s => t('game.result.statLine', { name: s.name, success: s.successCount, fail: s.failCount })).join(' | ') })}`
     : '';
-  $('result-detail').textContent = (result.detail || (result.winners?.length ? `获胜：${result.winners.join(', ')}` : '')) + statsLine;
+  $('result-detail').textContent = (result.detail || (result.winners?.length ? t('game.result.winners', { names: result.winners.join(', ') }) : '')) + statsLine;
   renderResultCards(result.revealedCards || []);
   const isHost = state.playerId === state.hostId;
   btnContinueRound.classList.toggle('hidden', !(canContinue && isHost));
@@ -657,13 +667,14 @@ chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); 
 // ── 控制按钮 ──────────────────────────────────────────────────────
 btnReady.addEventListener('click', () => {
   socket.emit('player_ready', { roomId: state.roomId, playerId: state.playerId });
-  const isReady = btnReady.textContent.includes('准备');
-  btnReady.textContent = isReady ? '❌ 取消准备' : '✅ 准备';
+  const nowReady = btnReady.dataset.ready === '1';
+  btnReady.dataset.ready = nowReady ? '0' : '1';
+  btnReady.textContent = btnReady.dataset.ready === '1' ? t('game.unready') : t('game.ready');
 });
 
 btnStart.addEventListener('click', () => {
   socket.emit('start_game', { roomId: state.roomId, playerId: state.playerId }, (res) => {
-    if (res && !res.success) addSystemMessage(`开始失败：${res.error}`);
+    if (res && !res.success) addSystemMessage(t('game.msg.startFailed', { error: res.error }));
   });
 });
 
@@ -674,8 +685,8 @@ btnLeave.addEventListener('click', () => {
 
 btnCopyId.addEventListener('click', () => {
   navigator.clipboard.writeText(state.roomId).then(() => {
-    btnCopyId.textContent = '✅ 已复制';
-    setTimeout(() => (btnCopyId.textContent = '复制'), 2000);
+    btnCopyId.textContent = t('game.copied');
+    setTimeout(() => (btnCopyId.textContent = t('game.copy')), 2000);
   });
 });
 
@@ -687,9 +698,23 @@ $('btn-back-lobby').addEventListener('click', () => {
 btnContinueRound.addEventListener('click', () => {
   socket.emit('continue_game', { roomId: state.roomId, playerId: state.playerId }, (res) => {
     if (!res?.success) {
-      addSystemMessage(`继续失败：${res?.error || '未知错误'}`);
+      addSystemMessage(t('game.msg.continueFailed', { error: res?.error || 'Unknown error' }));
     }
   });
+});
+
+window.addEventListener('lang_changed', () => {
+  if (window.I18N) window.I18N.applyPage();
+  roomLabel.textContent = t('game.roomLabel', { roomId: state.roomId });
+  renderPhase(state.phase);
+  renderPlayerList();
+  renderOpponents();
+  renderMyHand();
+  renderCommunityCards(state.communityCards);
+  renderActionPanel();
+  updateGameInfo();
+  renderMyPlacedCards(state.myPlacedCards || []);
+  btnReady.textContent = btnReady.dataset.ready === '1' ? t('game.unready') : t('game.ready');
 });
 
 // ── 初始化 ────────────────────────────────────────────────────────
@@ -703,8 +728,10 @@ btnContinueRound.addEventListener('click', () => {
     return;
   }
 
-  roomLabel.textContent    = `房间：${state.roomId}`;
+  roomLabel.textContent    = t('game.roomLabel', { roomId: state.roomId });
   roomIdDisplay.textContent = state.roomId;
+  btnReady.dataset.ready = '0';
+  btnReady.textContent = t('game.ready');
   showScreen('waiting');
-  addSystemMessage(`你好，${state.playerName}！等待其他玩家加入…`);
+  addSystemMessage(t('game.msg.helloWait', { name: state.playerName }));
 })();

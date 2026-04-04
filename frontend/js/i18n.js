@@ -1,0 +1,454 @@
+(function () {
+  const STORAGE_KEY = 'cg_lang';
+  const DEFAULT_LANG = 'zh';
+
+  const dict = {
+    zh: {
+      'common.lang': '语言',
+      'common.loading': '加载中...',
+
+      'index.docTitle': '纸牌对战',
+      'index.title': '🃏 纸牌对战',
+      'index.subtitle': '多人在线实时对战',
+      'index.rules': '查看规则',
+      'index.yourName': '你的名称',
+      'index.createRoom': '创建房间',
+      'index.joinRoom': '加入房间',
+      'index.publicRooms': '公开房间',
+      'index.or': '或',
+      'index.continueMode': '继续游戏模式',
+      'index.create': '创建',
+      'index.join': '加入',
+      'index.refresh': '🔄 刷新',
+      'index.noRooms': '暂无公开房间',
+      'index.roomNamePlaceholder': '房间名称（可选）',
+      'index.createPwPlaceholder': '房间密码（可选）',
+      'index.namePlaceholder': '输入玩家名称…',
+      'index.roomIdPlaceholder': '输入 6 位房间 ID',
+      'index.joinPwPlaceholder': '房间密码（若有）',
+      'index.peopleCount': '{count} 人',
+
+      'lobby.needName': '请先输入玩家名称',
+      'lobby.connected': '已连接到服务器',
+      'lobby.connectError': '无法连接到服务器，请检查后端是否运行',
+      'lobby.creatingRoom': '正在创建房间…',
+      'lobby.createFailed': '创建失败：{error}',
+      'lobby.joiningRoom': '正在加入房间…',
+      'lobby.joinFailed': '加入失败：{error}',
+      'lobby.needRoomId': '请输入 6 位房间 ID',
+      'lobby.defaultRoomName': '{name} 的房间',
+
+      'game.docTitle': '纸牌对战 - 游戏中',
+      'game.title': '🃏 纸牌对战',
+      'game.rules': '规则',
+      'game.leave': '离开',
+      'game.players': '玩家列表',
+      'game.start': '开始游戏',
+      'game.waitReady': '等待所有玩家准备',
+      'game.ready': '✅ 准备',
+      'game.unready': '❌ 取消准备',
+      'game.waiting': '等待游戏开始…',
+      'game.roomLabel': '房间：{roomId}',
+      'game.roomIdLabel': '房间 ID：',
+      'game.copy': '复制',
+      'game.copied': '✅ 已复制',
+      'game.myPlaced': '我的已放牌（仅自己可见）',
+      'game.chat': '聊天',
+      'game.send': '发送',
+      'game.chatPlaceholder': '发送消息…',
+      'game.backLobby': '返回大厅',
+      'game.continueRound': '继续下一轮',
+
+      'game.phase.waiting': '等待中',
+      'game.phase.ready': '准备',
+      'game.phase.playing': '游戏中',
+      'game.phase.ended': '已结束',
+
+      'game.tag.host': '房主',
+      'game.tag.me': '我',
+      'game.tag.ready': '已准备',
+      'game.tag.cards': '{count} 张',
+
+      'game.turn.rps': '阶段：石头剪刀布决首声明',
+      'game.turn.now': '轮到：{name}',
+      'game.turn.banner': '轮到 {name}',
+
+      'game.table.unknown': '未知',
+      'game.table.mine': ' (我)',
+      'game.table.faceDown': '背面牌 #{index}',
+      'game.table.faceDownLocked': '背面牌 #{index}（该玩家需先翻栈顶）',
+      'game.table.stackTop': '该玩家需先翻栈顶背面牌',
+      'game.table.noSelection': '请先选择 1 张场上的背面牌',
+      'game.table.myOrder': '我的顺序 #{myOrder} · 场上顺序 #{globalOrder}',
+      'game.table.top': '栈顶',
+      'game.table.none': '你还没有放过牌',
+      'game.table.deckInfoReveal': '场牌 {count} 张 · 翻牌中 {revealed}/{declared}（声明者：{name}）',
+      'game.table.deckInfoDeclared': '场牌 {count} 张 · 已声明黑牌：{declared}{by}',
+      'game.table.by': '（{name}）',
+
+      'game.card.red': '红',
+      'game.card.black': '黑',
+      'game.card.redLabel': '红牌',
+      'game.card.blackLabel': '黑牌',
+
+      'game.msg.disconnected': '与服务器断开连接，正在重连…',
+      'game.msg.playerLeft': '{name} 离开了房间',
+      'game.msg.started': '游戏开始！',
+      'game.msg.nextRound': '下一轮已开始',
+      'game.msg.waitRps': '等待石头剪刀布结果',
+      'game.msg.waitFirstDeclarer': '等待首声明玩家操作',
+      'game.msg.waitTurn': '等待你的回合',
+      'game.msg.noAction': '当前阶段无可执行操作',
+      'game.msg.rpsPhase': '当前是石头剪刀布阶段',
+      'game.msg.notInRps': '你不在本轮石头剪刀布参与者中',
+      'game.msg.notYourTurn': '未轮到你的回合',
+      'game.msg.noFirstDeclareRight': '首个声明权不在你，请等待获胜玩家先声明',
+      'game.msg.promptDeclare': '请输入要声明的黑牌数量（当前为 {current}，必须更大）',
+      'game.msg.declareInteger': '声明值必须是大于 0 的整数',
+      'game.msg.declareTooSmall': '声明失败：必须大于当前声明值 {current}',
+      'game.msg.selectOneCard': '请先选择且仅选择 1 张手牌',
+      'game.msg.passNotAllowed': '当前已声明黑牌数为 0，不能选择过',
+      'game.msg.noHandCard': '你手中无牌，不能扣置',
+      'game.msg.startFailed': '开始失败：{error}',
+      'game.msg.continueFailed': '继续失败：{error}',
+      'game.msg.helloWait': '你好，{name}！等待其他玩家加入…',
+
+      'game.action.place': '扣置 1 张',
+      'game.action.reveal': '翻开 1 张',
+      'game.action.declare': '声明',
+      'game.action.pass': '过',
+      'game.action.rock': '石头',
+      'game.action.scissors': '剪刀',
+      'game.action.paper': '布',
+
+      'game.result.roundOver': '本轮结束',
+      'game.result.winners': '获胜：{names}',
+      'game.result.stats': '战绩：{line}',
+      'game.result.statLine': '{name} 成功{success}/失败{fail}',
+
+      'rules.docTitle': '纸牌对战 - 规则说明',
+      'rules.title': '🃏 规则说明',
+      'rules.subtitle': '该页面可在大厅和游戏中随时打开查看（新标签页）。',
+      'rules.backLobby': '返回大厅',
+      'rules.backGame': '返回游戏页',
+      'rules.1.title': '1. 牌与开局',
+      'rules.1.1': '每位玩家开局获得 4 张牌，固定为 3 黑 1 红。',
+      'rules.1.2': '开局阶段每位玩家必须先手动扣置 1 张牌到场上。',
+      'rules.1.3': '所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。',
+      'rules.2.title': '2. 回合可执行动作',
+      'rules.2.1': '声明黑牌数量：若场上已有声明值 x，新声明必须大于 x。',
+      'rules.2.2': '扣置 1 张牌：从手牌选 1 张扣置到场上，并将已声明值归 0。',
+      'rules.2.3': '过：仅当当前声明值大于 0 时可以选择过。',
+      'rules.2.note': '补充：手中无牌时不能扣置。',
+      'rules.3.title': '3. 翻牌与胜负',
+      'rules.3.1': '当已声明值大于 0，且除声明者外其他玩家都选择过时，进入翻牌阶段。',
+      'rules.3.2': '仅声明者可翻牌，且必须按每位玩家的“栈顶顺序”翻牌，不能跳层。',
+      'rules.3.3': '翻到红牌立即失败。',
+      'rules.3.4': '当已翻黑牌数达到声明值即成功。',
+      'rules.3.5': '若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。',
+      'rules.4.title': '4. 多轮继续模式',
+      'rules.4.1': '创建房间时可开启“继续游戏模式”。',
+      'rules.4.2': '可设置成功次数和失败次数阈值（例如成功 2 次或失败 2 次结束整场）。',
+      'rules.4.3': '每轮结算后若未达到阈值，房主可点击“继续下一轮”。'
+    },
+    en: {
+      'common.lang': 'Language',
+      'common.loading': 'Loading...',
+
+      'index.docTitle': 'Card Duel',
+      'index.title': '🃏 Card Duel',
+      'index.subtitle': 'Multiplayer real-time online game',
+      'index.rules': 'Rules',
+      'index.yourName': 'Your Name',
+      'index.createRoom': 'Create Room',
+      'index.joinRoom': 'Join Room',
+      'index.publicRooms': 'Public Rooms',
+      'index.or': 'OR',
+      'index.continueMode': 'Continue Match Mode',
+      'index.create': 'Create',
+      'index.join': 'Join',
+      'index.refresh': '🔄 Refresh',
+      'index.noRooms': 'No public rooms',
+      'index.roomNamePlaceholder': 'Room name (optional)',
+      'index.createPwPlaceholder': 'Room password (optional)',
+      'index.namePlaceholder': 'Enter player name...',
+      'index.roomIdPlaceholder': 'Enter 6-digit room ID',
+      'index.joinPwPlaceholder': 'Room password (if any)',
+      'index.peopleCount': '{count} players',
+
+      'lobby.needName': 'Please enter your player name first',
+      'lobby.connected': 'Connected to server',
+      'lobby.connectError': 'Cannot connect to server. Please check backend status',
+      'lobby.creatingRoom': 'Creating room...',
+      'lobby.createFailed': 'Create failed: {error}',
+      'lobby.joiningRoom': 'Joining room...',
+      'lobby.joinFailed': 'Join failed: {error}',
+      'lobby.needRoomId': 'Please enter a 6-digit room ID',
+      'lobby.defaultRoomName': "{name}'s room",
+
+      'game.docTitle': 'Card Duel - In Game',
+      'game.title': '🃏 Card Duel',
+      'game.rules': 'Rules',
+      'game.leave': 'Leave',
+      'game.players': 'Players',
+      'game.start': 'Start Game',
+      'game.waitReady': 'Waiting for all players to be ready',
+      'game.ready': '✅ Ready',
+      'game.unready': '❌ Cancel Ready',
+      'game.waiting': 'Waiting for game to start...',
+      'game.roomLabel': 'Room: {roomId}',
+      'game.roomIdLabel': 'Room ID: ',
+      'game.copy': 'Copy',
+      'game.copied': '✅ Copied',
+      'game.myPlaced': 'My placed cards (private)',
+      'game.chat': 'Chat',
+      'game.send': 'Send',
+      'game.chatPlaceholder': 'Send a message...',
+      'game.backLobby': 'Back to Lobby',
+      'game.continueRound': 'Continue Next Round',
+
+      'game.phase.waiting': 'Waiting',
+      'game.phase.ready': 'Ready',
+      'game.phase.playing': 'Playing',
+      'game.phase.ended': 'Ended',
+
+      'game.tag.host': 'Host',
+      'game.tag.me': 'Me',
+      'game.tag.ready': 'Ready',
+      'game.tag.cards': '{count} cards',
+
+      'game.turn.rps': 'Phase: Rock-Paper-Scissors for first declaration',
+      'game.turn.now': 'Turn: {name}',
+      'game.turn.banner': '{name}\'s turn',
+
+      'game.table.unknown': 'Unknown',
+      'game.table.mine': ' (Me)',
+      'game.table.faceDown': 'Face-down #{index}',
+      'game.table.faceDownLocked': 'Face-down #{index} (must reveal stack top first)',
+      'game.table.stackTop': 'This player must reveal the top card of their stack first',
+      'game.table.noSelection': 'Please select one face-down card on the table',
+      'game.table.myOrder': 'My order #{myOrder} · Table order #{globalOrder}',
+      'game.table.top': 'Top',
+      'game.table.none': 'You have not placed any cards yet',
+      'game.table.deckInfoReveal': 'Table {count} cards · Revealing {revealed}/{declared} (Declarer: {name})',
+      'game.table.deckInfoDeclared': 'Table {count} cards · Declared black cards: {declared}{by}',
+      'game.table.by': ' ({name})',
+
+      'game.card.red': 'Red',
+      'game.card.black': 'Black',
+      'game.card.redLabel': 'Red card',
+      'game.card.blackLabel': 'Black card',
+
+      'game.msg.disconnected': 'Disconnected from server. Reconnecting...',
+      'game.msg.playerLeft': '{name} left the room',
+      'game.msg.started': 'Game started!',
+      'game.msg.nextRound': 'Next round has started',
+      'game.msg.waitRps': 'Waiting for Rock-Paper-Scissors result',
+      'game.msg.waitFirstDeclarer': 'Waiting for first declarer action',
+      'game.msg.waitTurn': 'Waiting for your turn',
+      'game.msg.noAction': 'No available action in current phase',
+      'game.msg.rpsPhase': 'Current phase is Rock-Paper-Scissors',
+      'game.msg.notInRps': 'You are not in this RPS participant group',
+      'game.msg.notYourTurn': 'It is not your turn',
+      'game.msg.noFirstDeclareRight': 'You do not have first declaration right. Wait for winner declaration first',
+      'game.msg.promptDeclare': 'Enter declared black card count (current {current}, must be greater)',
+      'game.msg.declareInteger': 'Declared value must be an integer greater than 0',
+      'game.msg.declareTooSmall': 'Declare failed: value must be greater than {current}',
+      'game.msg.selectOneCard': 'Please select exactly one hand card first',
+      'game.msg.passNotAllowed': 'Declared black card count is 0, pass is not allowed',
+      'game.msg.noHandCard': 'You have no hand cards and cannot place',
+      'game.msg.startFailed': 'Start failed: {error}',
+      'game.msg.continueFailed': 'Continue failed: {error}',
+      'game.msg.helloWait': 'Hi, {name}! Waiting for other players to join...',
+
+      'game.action.place': 'Place 1 Face-down',
+      'game.action.reveal': 'Reveal 1 Card',
+      'game.action.declare': 'Declare',
+      'game.action.pass': 'Pass',
+      'game.action.rock': 'Rock',
+      'game.action.scissors': 'Scissors',
+      'game.action.paper': 'Paper',
+
+      'game.result.roundOver': 'Round Over',
+      'game.result.winners': 'Winners: {names}',
+      'game.result.stats': 'Stats: {line}',
+      'game.result.statLine': '{name} success {success}/fail {fail}',
+
+      'rules.docTitle': 'Card Duel - Rules',
+      'rules.title': '🃏 Rules',
+      'rules.subtitle': 'You can open this page from the lobby or game at any time (new tab).',
+      'rules.backLobby': 'Back to Lobby',
+      'rules.backGame': 'Back to Game',
+      'rules.1.title': '1. Cards and Setup',
+      'rules.1.1': 'Each player starts with 4 cards: 3 black and 1 red.',
+      'rules.1.2': 'During setup, each player must place 1 face-down card on the table.',
+      'rules.1.3': 'After all players place the first card, play Rock-Paper-Scissors to decide the first declarer.',
+      'rules.2.title': '2. Available Actions Per Turn',
+      'rules.2.1': 'Declare black card count: if current declared value is x, your new declaration must be greater than x.',
+      'rules.2.2': 'Place 1 card face-down from hand and reset declared value to 0.',
+      'rules.2.3': 'Pass: only available when declared value is greater than 0.',
+      'rules.2.note': 'Note: you cannot place if you have no hand cards.',
+      'rules.3.title': '3. Reveal and Win/Lose',
+      'rules.3.1': 'When declared value is greater than 0 and all non-declarers pass, reveal phase starts.',
+      'rules.3.2': 'Only the declarer can reveal cards, and must reveal in stack-top order for each player.',
+      'rules.3.3': 'Revealing a red card causes immediate failure.',
+      'rules.3.4': 'If revealed black count reaches declared value, it is a success.',
+      'rules.3.5': 'If revealed black exceeds declared value, or target becomes impossible with remaining cards, it is a failure.',
+      'rules.4.title': '4. Continue Match Mode',
+      'rules.4.1': 'You can enable Continue Match Mode when creating a room.',
+      'rules.4.2': 'Set success and failure thresholds (for example, 2 successes or 2 failures ends the match).',
+      'rules.4.3': 'After each round, if thresholds are not reached, host can click Continue Next Round.'
+    }
+  };
+
+  function getLang() {
+    const raw = (localStorage.getItem(STORAGE_KEY) || DEFAULT_LANG).toLowerCase();
+    return raw === 'en' ? 'en' : 'zh';
+  }
+
+  function setLang(lang) {
+    const safe = lang === 'en' ? 'en' : 'zh';
+    localStorage.setItem(STORAGE_KEY, safe);
+    applyPage();
+    window.dispatchEvent(new CustomEvent('lang_changed', { detail: { lang: safe } }));
+  }
+
+  function t(key, vars) {
+    const lang = getLang();
+    const source = dict[lang] || dict.zh;
+    let txt = source[key] || dict.zh[key] || key;
+    if (vars && typeof vars === 'object') {
+      Object.keys(vars).forEach((k) => {
+        txt = txt.replaceAll(`{${k}}`, String(vars[k]));
+      });
+    }
+    return txt;
+  }
+
+  function setText(id, key, vars) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = t(key, vars);
+  }
+
+  function setPlaceholder(id, key) {
+    const el = document.getElementById(id);
+    if (el) el.placeholder = t(key);
+  }
+
+  function setupLanguageSelectors() {
+    const lang = getLang();
+    const selectors = document.querySelectorAll('#lang-select');
+    selectors.forEach((sel) => {
+      sel.value = lang;
+      if (!sel.dataset.i18nBound) {
+        sel.dataset.i18nBound = '1';
+        sel.addEventListener('change', () => setLang(sel.value));
+      }
+    });
+  }
+
+  function applyIndex() {
+    document.title = t('index.docTitle');
+    setText('lang-label', 'common.lang');
+    setText('lobby-title', 'index.title');
+    setText('lobby-subtitle', 'index.subtitle');
+    setText('btn-rules', 'index.rules');
+    setText('label-your-name', 'index.yourName');
+    setText('label-create-room', 'index.createRoom');
+    setText('label-join-room', 'index.joinRoom');
+    setText('label-public-rooms', 'index.publicRooms');
+    setText('label-or', 'index.or');
+    setText('label-continue-mode', 'index.continueMode');
+    setText('btn-create', 'index.create');
+    setText('btn-join', 'index.join');
+    setText('btn-refresh', 'index.refresh');
+
+    setPlaceholder('player-name', 'index.namePlaceholder');
+    setPlaceholder('room-name', 'index.roomNamePlaceholder');
+    setPlaceholder('create-password', 'index.createPwPlaceholder');
+    setPlaceholder('room-id', 'index.roomIdPlaceholder');
+    setPlaceholder('join-password', 'index.joinPwPlaceholder');
+    const emptyHint = document.querySelector('#room-list .empty-hint');
+    if (emptyHint) emptyHint.textContent = t('index.noRooms');
+  }
+
+  function applyGame() {
+    document.title = t('game.docTitle');
+    setText('lang-label', 'common.lang');
+    setText('game-title', 'game.title');
+    setText('btn-rules', 'game.rules');
+    setText('btn-leave', 'game.leave');
+    setText('label-player-list', 'game.players');
+    setText('btn-start', 'game.start');
+    setText('host-hint', 'game.waitReady');
+    setText('label-waiting', 'game.waiting');
+    setText('label-room-id', 'game.roomIdLabel');
+    setText('btn-copy-id', 'game.copy');
+    setText('label-my-private', 'game.myPlaced');
+    setText('label-chat', 'game.chat');
+    setText('btn-send', 'game.send');
+    setText('btn-continue-round', 'game.continueRound');
+    setText('btn-back-lobby', 'game.backLobby');
+    setPlaceholder('chat-input', 'game.chatPlaceholder');
+  }
+
+  function applyRules() {
+    document.title = t('rules.docTitle');
+    setText('lang-label', 'common.lang');
+    setText('rules-title', 'rules.title');
+    setText('rules-subtitle', 'rules.subtitle');
+    setText('btn-back-lobby', 'rules.backLobby');
+    setText('btn-back-game', 'rules.backGame');
+    setText('rule1-title', 'rules.1.title');
+    setText('rule1-1', 'rules.1.1');
+    setText('rule1-2', 'rules.1.2');
+    setText('rule1-3', 'rules.1.3');
+    setText('rule2-title', 'rules.2.title');
+    setText('rule2-1', 'rules.2.1');
+    setText('rule2-2', 'rules.2.2');
+    setText('rule2-3', 'rules.2.3');
+    setText('rule2-note', 'rules.2.note');
+    setText('rule3-title', 'rules.3.title');
+    setText('rule3-1', 'rules.3.1');
+    setText('rule3-2', 'rules.3.2');
+    setText('rule3-3', 'rules.3.3');
+    setText('rule3-4', 'rules.3.4');
+    setText('rule3-5', 'rules.3.5');
+    setText('rule4-title', 'rules.4.title');
+    setText('rule4-1', 'rules.4.1');
+    setText('rule4-2', 'rules.4.2');
+    setText('rule4-3', 'rules.4.3');
+  }
+
+  function applyPage() {
+    const lang = getLang();
+    document.documentElement.lang = lang;
+    setupLanguageSelectors();
+
+    const path = (location.pathname || '').toLowerCase();
+    if (path.endsWith('/index.html') || path === '/' || path.endsWith('/yx/') || path.endsWith('/yx')) {
+      applyIndex();
+      return;
+    }
+    if (path.endsWith('/game.html')) {
+      applyGame();
+      return;
+    }
+    if (path.endsWith('/rules.html')) {
+      applyRules();
+    }
+  }
+
+  window.I18N = {
+    getLang,
+    setLang,
+    t,
+    applyPage
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyPage);
+  } else {
+    applyPage();
+  }
+})();
