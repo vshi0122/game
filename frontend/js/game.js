@@ -299,6 +299,7 @@ function renderActionPanel(actions = []) {
   const rpsParticipants = state.gameState?.rpsParticipants || [];
   const inRpsParticipants = rpsParticipants.includes(state.playerId);
   const forcedFirstDeclarer = state.gameState?.forcedFirstDeclarer;
+  const declaredBlack = Number.isInteger(state.gameState?.declaredBlack) ? state.gameState.declaredBlack : 0;
   const iPlacedInitialCard = initialPlacementDone.has(state.playerId);
 
   if (isAwaitingRps) {
@@ -355,6 +356,11 @@ function renderActionPanel(actions = []) {
     } else if (!state.myHand.length) {
       // 手中无牌时不能扣置。
       actions = actions.filter(a => a.action !== 'place_face_down');
+    }
+
+    // 规则更新：当前已声明黑牌数为 0 时，不能选择过。
+    if (declaredBlack === 0) {
+      actions = actions.filter(a => a.action !== 'pass');
     }
   }
 
@@ -451,6 +457,10 @@ window.sendAction = function(action, extraData = {}) {
 
   if (action === 'place_face_down' && state.selectedCards.size !== 1) {
     addSystemMessage('请先选择且仅选择 1 张手牌');
+    return;
+  }
+  if (action === 'pass' && (state.gameState?.declaredBlack || 0) === 0) {
+    addSystemMessage('当前已声明黑牌数为 0，不能选择过');
     return;
   }
   if (action === 'place_face_down' && !state.myHand.length) {

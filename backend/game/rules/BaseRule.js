@@ -557,6 +557,15 @@ class BaseRule {
         return;
       }
 
+      if ((gs.declaredBlack || 0) === 0) {
+        this.room._emit(playerId, 'action_ack', {
+          playerId,
+          action,
+          message: '当前已声明黑牌数为 0，不能选择过',
+        });
+        return;
+      }
+
       const player = this.room.players.get(playerId);
       if (!player) return;
 
