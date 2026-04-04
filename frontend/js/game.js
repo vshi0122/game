@@ -22,6 +22,8 @@ const state = {
   enteringTableCardIndexes: new Set(),
   flippingTableCardIndexes: new Set(),
   myPlacedCards: [],
+  lastResult: null,
+  lastCanContinue: false,
   gameState:  {},
 };
 
@@ -563,12 +565,53 @@ function renderResultCards(cards) {
   resultCards.innerHTML = cards.map(card => {
     const isRed = isCardRed(card);
     const colorText = getCardColorText(card);
-    return `<div class="card ${isRed ? 'red' : 'black'}" title="${colorText}">
-      <div class="card-corner-top">${colorText}</div>
-      <div class="card-rank">${colorText}</div>
-      <div class="card-corner-bottom">${colorText}</div>
+    const ownerName = card.ownerName || t('game.table.unknown');
+    const meta = t('game.result.cardMeta', {
+      owner: ownerName,
+      globalOrder: card.globalOrder || '-',
+      ownerOrder: card.ownerOrder || '-'
+    });
+    return `<div class="result-card-item">
+      <div class="card ${isRed ? 'red' : 'black'}" title="${colorText}">
+        <div class="card-corner-top">${colorText}</div>
+        <div class="card-rank">${colorText}</div>
+        <div class="card-corner-bottom">${colorText}</div>
+      </div>
+      <div class="result-card-meta">${meta}</div>
     </div>`;
   }).join('');
+}
+
+function getResultTitle(result) {
+  if (result?.resultCode === 'success_exact') return t('game.result.title.success_exact');
+  if (result?.resultCode === 'fail_red') return t('game.result.title.fail_red');
+  if (result?.resultCode === 'fail_over') return t('game.result.title.fail_over');
+  if (result?.resultCode === 'fail_insufficient') return t('game.result.title.fail_insufficient');
+  return result?.success ? t('game.result.title.success') : t('game.result.title.fail');
+}
+
+function getResultDetail(result) {
+  const declarer = state.players.find(p => p.id === result?.declarerId)?.name || t('game.table.unknown');
+  const declared = Number.isInteger(result?.declaredBlack) ? result.declaredBlack : 0;
+  const revealed = Number.isInteger(result?.revealedBlack) ? result.revealedBlack : 0;
+
+  if (result?.resultCode === 'success_exact') {
+    return t('game.result.detail.success_exact', { declarer, declared, revealed });
+  }
+  if (result?.resultCode === 'fail_red') {
+    return t('game.result.detail.fail_red', { declarer, declared, revealed });
+  }
+  if (result?.resultCode === 'fail_over') {
+    return t('game.result.detail.fail_over', { declarer, declared, revealed });
+  }
+  if (result?.resultCode === 'fail_insufficient') {
+    return t('game.result.detail.fail_insufficient', { declarer, declared, revealed });
+  }
+
+  if (result?.winners?.length) {
+    return t('game.result.winners', { names: result.winners.join(', ') });
+  }
+  return result?.detail || '';
 }
 
 function renderMyPlacedCards(cards) {
@@ -612,12 +655,14 @@ function announceTurn(playerId) {
 }
 
 function showResultScreen(result, canContinue) {
+  state.lastResult = result;
+  state.lastCanContinue = !!canContinue;
   showScreen('result');
-  $('result-title').textContent = result.title || t('game.result.roundOver');
+  $('result-title').textContent = getResultTitle(result) || t('game.result.roundOver');
   const statsLine = Array.isArray(result.stats) && result.stats.length
     ? `\n${t('game.result.stats', { line: result.stats.map(s => t('game.result.statLine', { name: s.name, success: s.successCount, fail: s.failCount })).join(' | ') })}`
     : '';
-  $('result-detail').textContent = (result.detail || (result.winners?.length ? t('game.result.winners', { names: result.winners.join(', ') }) : '')) + statsLine;
+  $('result-detail').textContent = getResultDetail(result) + statsLine;
   renderResultCards(result.revealedCards || []);
   const isHost = state.playerId === state.hostId;
   btnContinueRound.classList.toggle('hidden', !(canContinue && isHost));
@@ -715,6 +760,9 @@ window.addEventListener('lang_changed', () => {
   updateGameInfo();
   renderMyPlacedCards(state.myPlacedCards || []);
   btnReady.textContent = btnReady.dataset.ready === '1' ? t('game.unready') : t('game.ready');
+  if (!resultScreen.classList.contains('hidden') && state.lastResult) {
+    showResultScreen(state.lastResult, state.lastCanContinue);
+  }
 });
 
 // ── 初始化 ────────────────────────────────────────────────────────

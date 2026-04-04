@@ -297,8 +297,23 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
   margin-top: 6px;
+}
+
+.result-card-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-card-meta {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.35;
+  max-width: 130px;
 }
 
 /* ── 聊天区 ── */

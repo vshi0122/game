@@ -200,6 +200,24 @@ class BaseRule {
     this.room.gameState.revealedBlack = 0;
   }
 
+  _buildRoundResultCards() {
+    const tableCards = this.room.gameState.tableCards || [];
+    const ownerOrderMap = new Map();
+    return tableCards.map((item, index) => {
+      const ownerName = this.room.players.get(item.ownerId)?.name || 'Unknown';
+      const prev = ownerOrderMap.get(item.ownerId) || 0;
+      const ownerOrder = prev + 1;
+      ownerOrderMap.set(item.ownerId, ownerOrder);
+      return {
+        color: item.card.color,
+        ownerId: item.ownerId,
+        ownerName,
+        globalOrder: index + 1,
+        ownerOrder,
+      };
+    });
+  }
+
   _checkRevealResult() {
     const gs = this.room.gameState;
     const declaredBlack = gs.declaredBlack || 0;
@@ -215,10 +233,11 @@ class BaseRule {
       this.room.handleRoundOutcome({
         declarerId: declaredBy,
         success: true,
-        title: '声明成功，获胜！',
-        detail: `${declarerName} 声明黑牌 ${declaredBlack}，翻出了 ${revealedBlack} 张黑牌`,
+        resultCode: 'success_exact',
+        declaredBlack,
+        revealedBlack,
         winners: [declarerName],
-        revealedCards: tableCards.map(item => ({ color: item.card.color })),
+        revealedCards: this._buildRoundResultCards(),
       });
       return true;
     }
@@ -229,10 +248,11 @@ class BaseRule {
       this.room.handleRoundOutcome({
         declarerId: declaredBy,
         success: false,
-        title: '声明失败，未获胜',
-        detail: `${declarerName} 声明黑牌 ${declaredBlack}，但已翻出 ${revealedBlack} 张黑牌（超出）`,
+        resultCode: 'fail_over',
+        declaredBlack,
+        revealedBlack,
         winners: [],
-        revealedCards: tableCards.map(item => ({ color: item.card.color })),
+        revealedCards: this._buildRoundResultCards(),
       });
       return true;
     }
@@ -244,10 +264,11 @@ class BaseRule {
       this.room.handleRoundOutcome({
         declarerId: declaredBy,
         success: false,
-        title: '声明失败，未获胜',
-        detail: `${declarerName} 声明黑牌 ${declaredBlack}，剩余可翻牌不足以达成`,
+        resultCode: 'fail_insufficient',
+        declaredBlack,
+        revealedBlack,
         winners: [],
-        revealedCards: tableCards.map(item => ({ color: item.card.color })),
+        revealedCards: this._buildRoundResultCards(),
       });
       return true;
     }
@@ -668,10 +689,11 @@ class BaseRule {
         this.room.handleRoundOutcome({
           declarerId: gs.declaredBy,
           success: false,
-          title: '声明失败，翻到红牌',
-          detail: `${declarerName} 在翻牌阶段翻到红牌，立即失败`,
+          resultCode: 'fail_red',
+          declaredBlack: gs.declaredBlack || 0,
+          revealedBlack: gs.revealedBlack || 0,
           winners: [],
-          revealedCards: tableCards.map(item => ({ color: item.card.color })),
+          revealedCards: this._buildRoundResultCards(),
         });
         return;
       }
