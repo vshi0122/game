@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>纸牌对战 · 游戏室</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/game.css" />
+</head>
+<body class="game-body">
+  <!-- 顶部信息栏 -->
+  <header class="game-header">
+    <div class="header-left">
+      <span id="room-label" class="room-label">房间：------</span>
+      <span id="phase-badge" class="phase-badge waiting">等待中</span>
+    </div>
+    <div class="header-center">
+      <h1>🃏 纸牌对战</h1>
+    </div>
+    <div class="header-right">
+      <button id="btn-leave" class="btn btn-ghost btn-sm">离开</button>
+    </div>
+  </header>
+
+  <div class="game-layout">
+    <!-- 左侧：玩家列表 -->
+    <aside class="player-sidebar">
+      <h3>玩家列表</h3>
+      <ul id="player-list" class="player-list"></ul>
+
+      <div id="host-controls" class="host-controls hidden">
+        <hr />
+        <button id="btn-start" class="btn btn-primary" disabled>开始游戏</button>
+        <p class="hint">等待所有玩家准备</p>
+      </div>
+
+      <div id="client-controls" class="client-controls">
+        <hr />
+        <button id="btn-ready" class="btn btn-secondary">✅ 准备</button>
+      </div>
+    </aside>
+
+    <!-- 中间：游戏主区域 -->
+    <main class="game-main">
+      <!-- 等待界面 -->
+      <div id="waiting-screen" class="waiting-screen">
+        <div class="waiting-animation">🃏</div>
+        <p>等待游戏开始…</p>
+        <div class="room-id-display">
+          房间 ID：<strong id="room-id-display">------</strong>
+          <button id="btn-copy-id" class="btn btn-ghost btn-sm">复制</button>
+        </div>
+      </div>
+
+      <!-- 游戏界面（游戏开始后显示） -->
+      <div id="game-screen" class="game-screen hidden">
+        <!-- 对手手牌区（朝下，数量显示） -->
+        <div id="opponents-area" class="opponents-area"></div>
+
+        <!-- 公共牌区 / 出牌区 -->
+        <div id="table-area" class="table-area">
+          <div id="community-cards" class="community-cards"></div>
+          <div id="game-info" class="game-info">
+            <span id="turn-info">轮到：-</span>
+            <span id="deck-count">牌堆剩余：-</span>
+          </div>
+        </div>
+
+        <!-- 我的手牌区 -->
+        <div class="my-hand-area">
+          <div id="my-hand" class="hand-cards"></div>
+          <div id="action-panel" class="action-panel">
+            <!-- 动作按钮由 game.js 动态注入 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 游戏结束界面 -->
+      <div id="result-screen" class="result-screen hidden">
+        <div class="result-card">
+          <h2 id="result-title">游戏结束</h2>
+          <p id="result-detail"></p>
+          <div id="result-cards" class="result-cards"></div>
+          <button id="btn-back-lobby" class="btn btn-primary">返回大厅</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧：聊天区 -->
+    <aside class="chat-sidebar">
+      <h3>聊天</h3>
+      <ul id="chat-messages" class="chat-messages"></ul>
+      <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="发送消息…" maxlength="60" />
+        <button id="btn-send" class="btn btn-ghost btn-sm">发送</button>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

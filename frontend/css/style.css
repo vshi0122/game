@@ -1,0 +1,151 @@
+/* =====================================================
+   全局 / 大厅样式
+   ===================================================== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-dark:  #0d4f2a;
+  --green-mid:   #1a7a42;
+  --green-light: #24a857;
+  --gold:        #f0c040;
+  --gold-dark:   #c8960a;
+  --text:        #eef4e8;
+  --text-dim:    #a8c4a0;
+  --card-bg:     rgba(0, 40, 15, 0.80);
+  --card-border: rgba(255, 220, 80, 0.25);
+  --radius:      12px;
+  --shadow:      0 8px 32px rgba(0,0,0,0.45);
+}
+
+body {
+  font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: var(--green-dark);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* 背景纹理覆层 */
+.bg-overlay {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(36,168,87,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 70%, rgba(240,192,64,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── 大厅布局 ── */
+.lobby-container {
+  position: relative; z-index: 1;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 16px 64px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+.lobby-header { text-align: center; padding: 16px 0; }
+.lobby-header h1 { font-size: 2.8rem; font-weight: 800; letter-spacing: 2px; color: var(--gold); text-shadow: 0 2px 12px rgba(240,192,64,0.4); }
+.subtitle { color: var(--text-dim); margin-top: 6px; font-size: 0.95rem; }
+
+/* ── 卡片面板 ── */
+.card-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+}
+.card-panel h2 { font-size: 1.1rem; color: var(--gold); margin-bottom: 14px; font-weight: 600; }
+
+/* ── 输入框 ── */
+input[type="text"],
+input[type="number"],
+input[type="password"] {
+  width: 100%; padding: 10px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input:focus { border-color: var(--green-light); background: rgba(255,255,255,0.1); }
+input::placeholder { color: var(--text-dim); }
+
+.input-row { display: flex; gap: 10px; margin-top: 10px; }
+.input-row input { flex: 1; }
+
+/* ── 按钮 ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 20px;
+  border: none; border-radius: 8px;
+  font-size: 0.95rem; font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary  { background: var(--gold); color: #1a2800; box-shadow: 0 2px 10px rgba(240,192,64,0.35); }
+.btn-primary:hover:not(:disabled)  { box-shadow: 0 4px 18px rgba(240,192,64,0.5); }
+.btn-secondary { background: var(--green-light); color: #fff; }
+.btn-secondary:hover:not(:disabled) { background: #2bc96a; }
+.btn-ghost  { background: rgba(255,255,255,0.08); color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
+.btn-sm     { padding: 6px 14px; font-size: 0.85rem; }
+.btn-danger { background: #c0392b; color: #fff; }
+
+/* ── 操作区 ── */
+.actions-panel { display: flex; gap: 24px; align-items: flex-start; }
+.action-block { flex: 1; }
+.action-block input { margin-bottom: 10px; }
+.action-block button { width: 100%; margin-top: 8px; }
+.divider {
+  display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; color: var(--text-dim); font-size: 0.85rem;
+  padding: 8px 0;
+}
+
+/* ── 房间列表 ── */
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.panel-header h2 { margin-bottom: 0; }
+.room-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.room-list li.empty-hint { color: var(--text-dim); text-align: center; padding: 16px 0; font-size: 0.9rem; }
+.room-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: background 0.2s;
+}
+.room-item:hover { background: rgba(255,255,255,0.09); }
+.room-item .room-info { font-size: 0.9rem; }
+.room-item .room-meta { font-size: 0.8rem; color: var(--text-dim); margin-top: 2px; }
+.room-item button { flex-shrink: 0; }
+
+/* ── 状态栏 ── */
+.status-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; padding: 10px 24px; border-radius: 50px;
+  font-size: 0.9rem; backdrop-filter: blur(10px);
+  transition: opacity 0.3s;
+  z-index: 100;
+}
+.status-bar.hidden { opacity: 0; pointer-events: none; }
+.status-bar.error { border-color: #e74c3c; color: #ff9090; }
+.status-bar.success { border-color: var(--green-light); color: #90ffb2; }
+
+/* ── 工具 ── */
+.hidden { display: none !important; }
+
+/* ── 响应式 ── */
+@media (max-width: 520px) {
+  .actions-panel { flex-direction: column; }
+  .divider { writing-mode: horizontal-tb; padding: 4px 0; text-align: center; }
+}
