@@ -38,9 +38,14 @@ io.on('connection', (socket) => {
   console.log(`[连接] ${socket.id}`);
 
   // 创建房间
-  socket.on('create_room', ({ playerName, roomName, maxPlayers, password }, cb) => {
+  socket.on('create_room', ({ playerName, roomName, maxPlayers, password, gameConfig }, cb) => {
     try {
-      const room = gameManager.createRoom({ roomName, maxPlayers: maxPlayers || 4, password: password || '' });
+      const room = gameManager.createRoom({
+        roomName,
+        maxPlayers: maxPlayers || 4,
+        password: password || '',
+        gameConfig,
+      });
       const result = gameManager.joinRoom(room.id, socket, playerName);
       cb({ success: true, roomId: room.id, playerId: result.playerId });
     } catch (err) {
@@ -67,6 +72,16 @@ io.on('connection', (socket) => {
   socket.on('start_game', ({ roomId, playerId }, cb) => {
     try {
       gameManager.startGame(roomId, playerId);
+      if (cb) cb({ success: true });
+    } catch (err) {
+      if (cb) cb({ success: false, error: err.message });
+    }
+  });
+
+  // 继续下一轮（房主操作）
+  socket.on('continue_game', ({ roomId, playerId }, cb) => {
+    try {
+      gameManager.continueGame(roomId, playerId);
       if (cb) cb({ success: true });
     } catch (err) {
       if (cb) cb({ success: false, error: err.message });

@@ -190,7 +190,9 @@ class BaseRule {
     if (revealedBlack === declaredBlack) {
       gs.info = `${declarerName} 翻牌成功`;
       this._syncState();
-      this.room.endGame({
+      this.room.handleRoundOutcome({
+        declarerId: declaredBy,
+        success: true,
         title: '声明成功，获胜！',
         detail: `${declarerName} 声明黑牌 ${declaredBlack}，翻出了 ${revealedBlack} 张黑牌`,
         winners: [declarerName],
@@ -202,7 +204,9 @@ class BaseRule {
     if (revealedBlack > declaredBlack) {
       gs.info = `${declarerName} 翻牌失败`;
       this._syncState();
-      this.room.endGame({
+      this.room.handleRoundOutcome({
+        declarerId: declaredBy,
+        success: false,
         title: '声明失败，未获胜',
         detail: `${declarerName} 声明黑牌 ${declaredBlack}，但已翻出 ${revealedBlack} 张黑牌（超出）`,
         winners: [],
@@ -215,7 +219,9 @@ class BaseRule {
     if (revealedBlack + remainingFaceDown < declaredBlack) {
       gs.info = `${declarerName} 翻牌失败`;
       this._syncState();
-      this.room.endGame({
+      this.room.handleRoundOutcome({
+        declarerId: declaredBy,
+        success: false,
         title: '声明失败，未获胜',
         detail: `${declarerName} 声明黑牌 ${declaredBlack}，剩余可翻牌不足以达成`,
         winners: [],
@@ -637,7 +643,9 @@ class BaseRule {
         const declarerName = declarer?.name || '声明玩家';
         gs.info = `${declarerName} 翻到红牌，判负`;
         this._syncState();
-        this.room.endGame({
+        this.room.handleRoundOutcome({
+          declarerId: gs.declaredBy,
+          success: false,
           title: '声明失败，翻到红牌',
           detail: `${declarerName} 在翻牌阶段翻到红牌，立即失败`,
           winners: [],

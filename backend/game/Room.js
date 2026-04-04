@@ -12,7 +12,7 @@ const PHASE = {
 };
 
 class Room {
-  constructor({ id, roomName, maxPlayers, password, io }) {
+  constructor({ id, roomName, maxPlayers, password, gameConfig, io }) {
     this.id = id;
     this.roomName = roomName;
     this.maxPlayers = maxPlayers || 4;
@@ -29,6 +29,14 @@ class Room {
     this.ruleEngine = new RuleEngine(this);
     this.gameState = {};   // 由规则引擎维护的游戏状态
     this.hostId = null;    // 房主 playerId
+    this.awaitingContinue = false;
+    const successTarget = Number.parseInt(gameConfig?.successTarget, 10);
+    const failTarget = Number.parseInt(gameConfig?.failTarget, 10);
+    this.gameConfig = {
+      continueMode: !!gameConfig?.continueMode,
+      successTarget: Number.isInteger(successTarget) ? Math.min(Math.max(successTarget, 1), 10) : 1,
+      failTarget: Number.isInteger(failTarget) ? Math.min(Math.max(failTarget, 1), 10) : 1,
+    };
     /** @type {Map<string, ReturnType<typeof setTimeout>>} socketId => timer */
     this.pendingDisconnects = new Map();
   }
@@ -70,6 +78,8 @@ class Room {
       ready: false,
       hand: [],       // 手牌
       score: 0,
+      successCount: 0,
+      failCount: 0,
     };
 
     this.players.set(playerId, player);
@@ -122,11 +132,16 @@ class Room {
     if (notReady.length > 0) throw new Error('有玩家尚未准备');
 
     this.phase = PHASE.PLAYING;
+    this.awaitingContinue = false;
     this.deck = new Deck();
     this.deck.shuffle();
 
-    // 清空手牌
-    for (const p of this.players.values()) p.hand = [];
+    // 清空手牌与本场战绩
+    for (const p of this.players.values()) {
+      p.hand = [];
+      p.successCount = 0;
+      p.failCount = 0;
+    }
 
     // 初始化规则引擎，由其接管后续流程
     this.ruleEngine.onGameStart([...this.players.values()], this.deck);
@@ -134,13 +149,70 @@ class Room {
     console.log(`[Room ${this.id}] 游戏开始`);
   }
 
+  continueGame(requestPlayerId) {
+    if (!this.awaitingContinue || this.phase !== PHASE.ENDED) {
+      throw new Error('当前不在可继续阶段');
+    }
+    if (requestPlayerId !== this.hostId) {
+      throw new Error('只有房主可以继续下一轮');
+    }
+
+    this.phase = PHASE.PLAYING;
+    this.awaitingContinue = false;
+    this.deck = new Deck();
+    this.deck.shuffle();
+
+    for (const p of this.players.values()) {
+      p.hand = [];
+    }
+
+    this.ruleEngine.onGameStart([...this.players.values()], this.deck);
+    this._broadcast('match_continued', { message: '已开始下一轮' });
+  }
+
   handleAction(playerId, action, data, socket) {
     if (this.phase !== PHASE.PLAYING) return;
     this.ruleEngine.onAction(playerId, action, data);
   }
 
+  handleRoundOutcome(result) {
+    const declarer = this.players.get(result.declarerId);
+    if (!declarer) {
+      this.endGame(result);
+      return;
+    }
+
+    if (result.success) declarer.successCount += 1;
+    else declarer.failCount += 1;
+
+    const reachSuccess = declarer.successCount >= this.gameConfig.successTarget;
+    const reachFail = declarer.failCount >= this.gameConfig.failTarget;
+    const shouldEndMatch = !this.gameConfig.continueMode || reachSuccess || reachFail;
+
+    if (shouldEndMatch) {
+      this.endGame({
+        ...result,
+        stats: this._getMatchStats(),
+      });
+      return;
+    }
+
+    this.phase = PHASE.ENDED;
+    this.awaitingContinue = true;
+    this._broadcast('round_over', {
+      ...result,
+      canContinue: true,
+      hostId: this.hostId,
+      successTarget: this.gameConfig.successTarget,
+      failTarget: this.gameConfig.failTarget,
+      stats: this._getMatchStats(),
+    });
+    this._broadcast('room_update', this._getRoomState());
+  }
+
   endGame(result) {
     this.phase = PHASE.ENDED;
+    this.awaitingContinue = false;
     this._broadcast('game_over', result);
     // 5 秒后重置房间
     setTimeout(() => this._resetToWaiting(), 5000);
@@ -152,9 +224,21 @@ class Room {
       p.ready = false;
       p.hand = [];
       p.score = 0;
+      p.successCount = 0;
+      p.failCount = 0;
     }
+    this.awaitingContinue = false;
     this.gameState = {};
     this._broadcast('room_update', this._getRoomState());
+  }
+
+  _getMatchStats() {
+    return [...this.players.values()].map(p => ({
+      id: p.id,
+      name: p.name,
+      successCount: p.successCount,
+      failCount: p.failCount,
+    }));
   }
 
   /**
@@ -198,12 +282,16 @@ class Room {
       phase: this.phase,
       hostId: this.hostId,
       maxPlayers: this.maxPlayers,
+      awaitingContinue: this.awaitingContinue,
+      gameConfig: this.gameConfig,
       players: [...this.players.values()].map(p => ({
         id: p.id,
         name: p.name,
         ready: p.ready,
         score: p.score,
         cardCount: p.hand.length,
+        successCount: p.successCount,
+        failCount: p.failCount,
       })),
       gameState: this.gameState,
     };
@@ -216,6 +304,7 @@ class Room {
       phase: this.phase,
       playerCount: this.players.size,
       maxPlayers: this.maxPlayers,
+      continueMode: this.gameConfig.continueMode,
     };
   }
 }

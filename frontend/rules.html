@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>纸牌对战 · 规则</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .rules-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 28px 16px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .rules-wrap h1 { color: var(--gold); margin-bottom: 6px; }
+    .rules-wrap h2 { color: var(--gold); font-size: 1.05rem; margin-bottom: 10px; }
+    .rules-wrap p, .rules-wrap li { color: var(--text); line-height: 1.7; }
+    .rules-wrap ol, .rules-wrap ul { padding-left: 20px; }
+    .rules-meta { color: var(--text-dim); font-size: 0.9rem; }
+    .rules-top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .rule-block { display: flex; flex-direction: column; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="bg-overlay"></div>
+
+  <main class="rules-wrap">
+    <section class="card-panel">
+      <h1>🃏 规则说明</h1>
+      <p class="rules-meta">该页面可在大厅和游戏中随时打开查看（新标签页）。</p>
+      <div class="rules-top-actions" style="margin-top:10px;">
+        <a class="btn btn-ghost btn-sm" href="index.html">返回大厅</a>
+        <a class="btn btn-ghost btn-sm" href="game.html">返回游戏页</a>
+      </div>
+    </section>
+
+    <section class="card-panel rule-block">
+      <h2>1. 牌与开局</h2>
+      <ul>
+        <li>每位玩家开局获得 4 张牌，固定为 3 黑 1 红。</li>
+        <li>开局阶段每位玩家必须先手动扣置 1 张牌到场上。</li>
+        <li>所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。</li>
+      </ul>
+    </section>
+
+    <section class="card-panel rule-block">
+      <h2>2. 回合可执行动作</h2>
+      <ol>
+        <li>声明黑牌数量：若场上已有声明值 x，新声明必须大于 x。</li>
+        <li>扣置 1 张牌：从手牌选 1 张扣置到场上，并将已声明值归 0。</li>
+        <li>过：仅当当前声明值大于 0 时可以选择过。</li>
+      </ol>
+      <p class="rules-meta">补充：手中无牌时不能扣置。</p>
+    </section>
+
+    <section class="card-panel rule-block">
+      <h2>3. 翻牌与胜负</h2>
+      <ul>
+        <li>当已声明值大于 0，且除声明者外其他玩家都选择过时，进入翻牌阶段。</li>
+        <li>仅声明者可翻牌，且必须按每位玩家的“栈顶顺序”翻牌，不能跳层。</li>
+        <li>翻到红牌立即失败。</li>
+        <li>当已翻黑牌数达到声明值即成功。</li>
+        <li>若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。</li>
+      </ul>
+    </section>
+
+    <section class="card-panel rule-block">
+      <h2>4. 多轮继续模式</h2>
+      <ul>
+        <li>创建房间时可开启“继续游戏模式”。</li>
+        <li>可设置成功次数和失败次数阈值（例如成功 2 次或失败 2 次结束整场）。</li>
+        <li>每轮结算后若未达到阈值，房主可点击“继续下一轮”。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

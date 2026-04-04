@@ -13,6 +13,9 @@ const playerNameInput  = $('player-name');
 const roomNameInput    = $('room-name');
 const maxPlayersInput  = $('max-players');
 const createPwInput    = $('create-password');
+const continueModeInput = $('continue-mode');
+const successTargetInput = $('success-target');
+const failTargetInput = $('fail-target');
 const roomIdInput      = $('room-id');
 const joinPwInput      = $('join-password');
 const btnCreate        = $('btn-create');
@@ -73,6 +76,11 @@ btnCreate.addEventListener('click', () => {
     roomName: roomNameInput.value.trim() || `${playerName} 的房间`,
     maxPlayers: parseInt(maxPlayersInput.value, 10) || 4,
     password: createPwInput.value,
+    gameConfig: {
+      continueMode: continueModeInput.checked,
+      successTarget: parseInt(successTargetInput.value, 10) || 1,
+      failTarget: parseInt(failTargetInput.value, 10) || 1,
+    },
   }, (res) => {
     if (res.success) {
       navigateToGame(res.roomId, res.playerId, playerName);
@@ -151,4 +159,16 @@ window.quickJoin = function(roomId) {
   // 每 30 秒自动刷新房间列表
   connectSocket();
   setInterval(fetchRooms, 30000);
+
+  const updateContinueModeInputs = () => {
+    const enabled = continueModeInput.checked;
+    successTargetInput.disabled = !enabled;
+    failTargetInput.disabled = !enabled;
+    if (!enabled) {
+      successTargetInput.value = '1';
+      failTargetInput.value = '1';
+    }
+  };
+  continueModeInput.addEventListener('change', updateContinueModeInputs);
+  updateContinueModeInputs();
 })();

@@ -46,6 +46,7 @@ const btnSend        = $('btn-send');
 const turnInfo       = $('turn-info');
 const deckCount      = $('deck-count');
 const resultCards    = $('result-cards');
+const btnContinueRound = $('btn-continue-round');
 
 // ── Socket 连接 ───────────────────────────────────────────────────
 const socket = io(window.SERVER_URL, { transports: ['websocket', 'polling'] });
@@ -128,10 +129,16 @@ socket.on('action_ack', (data) => {
 
 // 游戏结束
 socket.on('game_over', (result) => {
-  showScreen('result');
-  $('result-title').textContent = result.title || '游戏结束';
-  $('result-detail').textContent = result.detail || (result.winners?.length ? `获胜：${result.winners.join(', ')}` : '');
-  renderResultCards(result.revealedCards || []);
+  showResultScreen(result, false);
+});
+
+socket.on('round_over', (result) => {
+  showResultScreen(result, !!result.canContinue);
+});
+
+socket.on('match_continued', () => {
+  showScreen('game');
+  addSystemMessage('下一轮已开始');
 });
 
 // 聊天消息
@@ -507,6 +514,18 @@ function renderResultCards(cards) {
   }).join('');
 }
 
+function showResultScreen(result, canContinue) {
+  showScreen('result');
+  $('result-title').textContent = result.title || '本轮结束';
+  const statsLine = Array.isArray(result.stats) && result.stats.length
+    ? `\n战绩：${result.stats.map(s => `${s.name} 成功${s.successCount}/失败${s.failCount}`).join(' | ')}`
+    : '';
+  $('result-detail').textContent = (result.detail || (result.winners?.length ? `获胜：${result.winners.join(', ')}` : '')) + statsLine;
+  renderResultCards(result.revealedCards || []);
+  const isHost = state.playerId === state.hostId;
+  btnContinueRound.classList.toggle('hidden', !(canContinue && isHost));
+}
+
 // ── 屏幕切换 ──────────────────────────────────────────────────────
 function showScreen(name) {
   waitingScreen.classList.add('hidden');
@@ -576,6 +595,14 @@ btnCopyId.addEventListener('click', () => {
 $('btn-back-lobby').addEventListener('click', () => {
   socket.disconnect();
   location.href = 'index.html';
+});
+
+btnContinueRound.addEventListener('click', () => {
+  socket.emit('continue_game', { roomId: state.roomId, playerId: state.playerId }, (res) => {
+    if (!res?.success) {
+      addSystemMessage(`继续失败：${res?.error || '未知错误'}`);
+    }
+  });
 });
 
 // ── 初始化 ────────────────────────────────────────────────────────

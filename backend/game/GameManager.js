@@ -15,9 +15,16 @@ class GameManager {
 
   // ── 房间管理 ───────────────────────────────────────────────────
 
-  createRoom({ roomName, maxPlayers, password }) {
+  createRoom({ roomName, maxPlayers, password, gameConfig }) {
     const id = uuidv4().slice(0, 6).toUpperCase();
-    const room = new Room({ id, roomName: roomName || `房间 ${id}`, maxPlayers, password, io: this.io });
+    const room = new Room({
+      id,
+      roomName: roomName || `房间 ${id}`,
+      maxPlayers,
+      password,
+      gameConfig,
+      io: this.io,
+    });
     this.rooms.set(id, room);
     console.log(`[GameManager] 房间创建: ${id} "${room.roomName}"`);
     return room;
@@ -45,6 +52,11 @@ class GameManager {
   startGame(roomId, playerId) {
     const room = this.getRoom(roomId);
     room.startGame(playerId);
+  }
+
+  continueGame(roomId, playerId) {
+    const room = this.getRoom(roomId);
+    room.continueGame(playerId);
   }
 
   handleGameAction(roomId, playerId, action, data, socket) {
