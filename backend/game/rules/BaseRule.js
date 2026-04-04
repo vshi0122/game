@@ -275,6 +275,7 @@ class BaseRule {
       turnIndex: 0,
       round: 1,
       tableCards,
+      initialPlacementPhase: true,
       declaredBlack: 0,
       declaredBy: null,
       passedPlayers: [],
@@ -454,13 +455,20 @@ class BaseRule {
       // 私发最新手牌给该玩家
       this.room._emit(playerId, 'deal_hand', { hand: player.hand });
 
-      const allInitialDone = this._allPlayersInitialPlaced();
-      if (allInitialDone) {
-        // 首次扣置完成后进入石头剪刀布，决定首个声明权。
-        const participants = [...this.room.players.values()].map(p => p.id);
-        this._startRpsPhase(participants);
+      if (gs.initialPlacementPhase) {
+        const allInitialDone = this._allPlayersInitialPlaced();
+        if (allInitialDone) {
+          // 首次扣置完成后进入石头剪刀布，决定首个声明权（仅触发一次）。
+          gs.initialPlacementPhase = false;
+          const participants = [...this.room.players.values()].map(p => p.id);
+          this._startRpsPhase(participants);
+        } else {
+          this.room.gameState.info = '开局阶段：每位玩家需手动扣置 1 张牌';
+          this._nextTurn();
+          this._syncState();
+        }
       } else {
-        this.room.gameState.info = '开局阶段：每位玩家需手动扣置 1 张牌';
+        // 正常对局中的扣置，不再触发石头剪刀布。
         this._nextTurn();
         this._syncState();
       }
