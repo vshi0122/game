@@ -6,7 +6,7 @@
  * 或设置 window.CARD_GAME_SERVER 环境注入。
  */
 
-const PRODUCTION_URL = 'https://YOUR-APP.up.railway.app'; // ← 部署后替换此处
+const PRODUCTION_URL = 'https://game-production-46a5.up.railway.app';
 
 window.SERVER_URL =
   window.CARD_GAME_SERVER ||          // 支持外部注入
