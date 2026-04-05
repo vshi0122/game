@@ -17,12 +17,19 @@ class BaseRule {
   }
 
   _buildInitialHand() {
-    const cards = [
-      { color: 'black' },
-      { color: 'black' },
-      { color: 'red' },
-      { color: 'white' },
-    ];
+    const cards = this.room.gameConfig?.includeWhiteCard
+      ? [
+          { color: 'black' },
+          { color: 'black' },
+          { color: 'red' },
+          { color: 'white' },
+        ]
+      : [
+          { color: 'black' },
+          { color: 'black' },
+          { color: 'black' },
+          { color: 'red' },
+        ];
     for (let i = cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -308,7 +315,7 @@ class BaseRule {
    * @param {import('../Deck')} deck  - 已洗好的牌堆
    */
   onGameStart(players, deck) {
-    // 规则 1：每人 4 张牌，固定 2 黑 1 红 1 白，除了颜色无任何区别。
+    // 规则 1：每人 4 张牌；默认 3 黑 1 红，若开启白牌模式则为 2 黑 1 红 1 白。
     for (const player of players) {
       player.hand = this._buildInitialHand();
       // 私发手牌（其他玩家不可见）

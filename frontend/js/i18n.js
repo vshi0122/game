@@ -18,6 +18,10 @@
       'index.or': '或',
       'index.continueMode': '继续游戏模式',
       'index.continueModeDesc': '开启后：整场将在达到阈值时结束（例如 成功 {success} 次 或 失败 {fail} 次）。',
+      'index.whiteMode': '白牌模式（可选）',
+      'index.whiteModeDesc': '开启后：每位玩家初始牌变为 2 黑 + 1 红 + 1 白；白牌不算黑也不判红。',
+      'index.whiteModeOn': '白牌模式：开',
+      'index.whiteModeOff': '白牌模式：关',
       'index.create': '创建',
       'index.join': '加入',
       'index.refresh': '🔄 刷新',
@@ -225,7 +229,7 @@
       'rules.backLobby': '返回大厅',
       'rules.backGame': '返回游戏页',
       'rules.1.title': '1. 牌与开局',
-      'rules.1.1': '每位玩家开局获得 4 张牌，固定为 2 黑 1 红 1 白。',
+      'rules.1.1': '每位玩家开局获得 4 张牌：默认是 3 黑 1 红；若房主开启白牌模式，则改为 2 黑 1 红 1 白。',
       'rules.1.2': '开局阶段每位玩家必须先手动扣置 1 张牌到场上。',
       'rules.1.3': '所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。',
       'rules.2.title': '2. 回合可执行动作',
@@ -259,6 +263,10 @@
       'index.or': 'OR',
       'index.continueMode': 'Continue Match Mode',
       'index.continueModeDesc': 'When enabled, the match ends once a threshold is reached (e.g. {success} successes OR {fail} failures).',
+      'index.whiteMode': 'White Card Mode (Optional)',
+      'index.whiteModeDesc': 'When enabled, each player starts with 2 black + 1 red + 1 white. White cards are neither black-count nor instant-fail red.',
+      'index.whiteModeOn': 'White mode: ON',
+      'index.whiteModeOff': 'White mode: OFF',
       'index.create': 'Create',
       'index.join': 'Join',
       'index.refresh': '🔄 Refresh',
@@ -466,7 +474,7 @@
       'rules.backLobby': 'Back to Lobby',
       'rules.backGame': 'Back to Game',
       'rules.1.title': '1. Cards and Setup',
-      'rules.1.1': 'Each player starts with 4 cards: 2 black, 1 red, and 1 white.',
+      'rules.1.1': 'Each player starts with 4 cards: default is 3 black + 1 red; if host enables White Card Mode, it becomes 2 black + 1 red + 1 white.',
       'rules.1.2': 'During setup, each player must place 1 face-down card on the table.',
       'rules.1.3': 'After all players place the first card, play Rock-Paper-Scissors to decide the first declarer.',
       'rules.2.title': '2. Available Actions Per Turn',
@@ -545,6 +553,7 @@
     setText('label-public-rooms', 'index.publicRooms');
     setText('label-or', 'index.or');
     setText('label-continue-mode', 'index.continueMode');
+    setText('label-white-card-mode', 'index.whiteMode');
     setText('label-max-players', 'index.maxPlayers');
     setText('label-create-password', 'index.createPassword');
     setText('label-success-target', 'index.successTarget');
@@ -563,10 +572,14 @@
     const successInput = document.getElementById('success-target');
     const failInput = document.getElementById('fail-target');
     const continueDesc = document.getElementById('continue-mode-desc');
+    const whiteModeDesc = document.getElementById('white-card-mode-desc');
     if (continueDesc) {
       const success = successInput?.value || '2';
       const fail = failInput?.value || '2';
       continueDesc.textContent = t('index.continueModeDesc', { success, fail });
+    }
+    if (whiteModeDesc) {
+      whiteModeDesc.textContent = t('index.whiteModeDesc');
     }
 
     const emptyHint = document.querySelector('#room-list .empty-hint');

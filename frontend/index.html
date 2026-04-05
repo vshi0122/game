@@ -55,6 +55,13 @@
             <span id="label-continue-mode">继续游戏模式</span>
           </label>
         </div>
+        <div class="input-row">
+          <label style="display:flex;align-items:center;gap:6px;font-size:0.86rem;color:var(--text-dim)">
+            <input type="checkbox" id="white-card-mode" />
+            <span id="label-white-card-mode">白牌模式（可选）</span>
+          </label>
+        </div>
+        <p id="white-card-mode-desc" class="form-hint">开启后：每位玩家初始牌变为 2 黑 + 1 红 + 1 白；白牌不算黑也不判红。</p>
         <p id="continue-mode-desc" class="form-hint">开启后：整场将在达到阈值时结束（例如 成功 2 次 或 失败 2 次）。</p>
         <div class="input-row inline-fields continue-settings">
           <label for="success-target" id="label-success-target" class="field-label">成功达到（次）</label>

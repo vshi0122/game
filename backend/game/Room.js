@@ -34,6 +34,7 @@ class Room {
     const failTarget = Number.parseInt(gameConfig?.failTarget, 10);
     this.gameConfig = {
       continueMode: !!gameConfig?.continueMode,
+      includeWhiteCard: !!gameConfig?.includeWhiteCard,
       successTarget: Number.isInteger(successTarget) ? Math.min(Math.max(successTarget, 1), 10) : 1,
       failTarget: Number.isInteger(failTarget) ? Math.min(Math.max(failTarget, 1), 10) : 1,
     };
@@ -305,6 +306,7 @@ class Room {
       playerCount: this.players.size,
       maxPlayers: this.maxPlayers,
       continueMode: this.gameConfig.continueMode,
+      includeWhiteCard: this.gameConfig.includeWhiteCard,
     };
   }
 }

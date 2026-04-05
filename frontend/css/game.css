@@ -452,7 +452,7 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 .card.red   { color: #e74c3c; }
 .card.black { color: #1a1a2e; }
 .card.white {
-  color: #3b3f46;
+  color: #8d95a3;
   border-color: #d9dce1;
   background: linear-gradient(135deg, #ffffff 10%, #edf1f6 100%);
 }
