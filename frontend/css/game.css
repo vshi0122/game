@@ -158,15 +158,149 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   border: 2px solid rgba(255,220,80,0.15);
   min-height: 120px;
 }
-.community-cards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.community-cards {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  width: min(920px, 100%);
+}
+
+.community-pile {
+  min-width: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.community-pile-name {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-align: center;
+}
+
+.community-pile-stack {
+  position: relative;
+  width: 100px;
+}
+
+.community-pile-hidden-count {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: center;
+  min-height: 14px;
+}
+
+.community-pile-revealed {
+  min-height: 96px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.community-pile-card {
+  position: absolute;
+  left: 0;
+}
+
+.community-pile-card.is-buried {
+  opacity: 0.6;
+}
+
+.community-pile-card.is-top-revealable .card.face-down {
+  box-shadow: 0 0 0 2px rgba(255, 214, 102, 0.6), 0 0 18px rgba(255, 214, 102, 0.35);
+  transform: translateY(-4px);
+}
+
+.community-pile-hint {
+  min-height: 18px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  color: #ffd7a8;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.community-pile-hint.show {
+  opacity: 1;
+}
+
+.community-pile-revealed .card {
+  width: 52px;
+  height: 74px;
+  font-size: 0.85rem;
+}
+
+.community-pile.revealed-first .community-pile-revealed {
+  order: 1;
+}
+
+.community-pile.revealed-first .community-pile-hidden-count {
+  order: 2;
+}
+
+.community-pile.revealed-first .community-pile-stack {
+  order: 3;
+}
+
+.community-pile.revealed-first .community-pile-hint {
+  order: 4;
+}
 .game-info { display: flex; gap: 20px; font-size: 0.85rem; color: var(--text-dim); }
+
+.phase-instruction {
+  max-width: min(720px, calc(100% - 24px));
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f4f8ef;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  text-align: center;
+}
 
 /* 手牌区 */
 .my-hand-area {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .hand-cards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.action-panel { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.action-panel { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: min(720px, 100%); }
+
+.action-option {
+  min-width: 148px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.action-option .btn {
+  width: 100%;
+}
+
+.action-option.is-disabled {
+  opacity: 0.78;
+}
+
+.action-desc {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 0 4px;
+}
+
+.action-desc.is-disabled {
+  color: #ffd5a6;
+}
 
 .my-private-panel {
   width: min(720px, 100%);
@@ -218,6 +352,10 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   transform: translateY(-12px);
   box-shadow: 0 8px 20px rgba(240,192,64,0.6);
   border-color: var(--gold);
+}
+.community-pile-card .card.selected {
+  transform: translateY(-10px) scale(1.03);
+  box-shadow: 0 10px 24px rgba(240,192,64,0.72);
 }
 .card.outgoing {
   animation: cardOutgoing 0.28s ease forwards;

@@ -24,6 +24,7 @@ const state = {
   myPlacedCards: [],
   lastResult: null,
   lastCanContinue: false,
+  pileHintOwnerId: null,
   gameState:  {},
 };
 
@@ -51,6 +52,7 @@ const chatInput      = $('chat-input');
 const btnSend        = $('btn-send');
 const turnInfo       = $('turn-info');
 const deckCount      = $('deck-count');
+const phaseInstruction = $('phase-instruction');
 const resultCards    = $('result-cards');
 const btnContinueRound = $('btn-continue-round');
 const myPlacedCardsEl = $('my-placed-cards');
@@ -97,10 +99,16 @@ socket.on('player_left', ({ playerName }) => {
 
 socket.on('game_started', (data) => {
   state.players  = data.players;
+  state.hostId   = data.hostId || state.hostId;
+  state.phase    = data.phase || 'playing';
   state.gameState = data.gameState || {};
   state.communityCards = [];
   state.selectedTableCardIndex = null;
+  state.pileHintOwnerId = null;
   showScreen('game');
+  renderPhase(state.phase);
+  renderPlayerList();
+  updateHostControls();
   renderOpponents();
   renderCommunityCards(state.communityCards);
   updateGameInfo();
@@ -173,7 +181,9 @@ socket.on('round_over', (result) => {
 });
 
 socket.on('match_continued', () => {
+  state.phase = 'playing';
   showScreen('game');
+  renderPhase(state.phase);
   addSystemMessage(t('game.msg.nextRound'));
 });
 
@@ -184,8 +194,80 @@ socket.on('chat_message', ({ playerName, message }) => {
 
 // ── UI 渲染 ───────────────────────────────────────────────────────
 function renderPhase(phase) {
-  phaseBadge.textContent = t(`game.phase.${phase}`);
+  phaseBadge.textContent = getPhaseBadgeText(phase);
   phaseBadge.className   = `phase-badge ${phase}`;
+}
+
+function getPhaseBadgeText(phase) {
+  const gs = state.gameState || {};
+  const initialPlacementDone = new Set((gs.tableCards || []).map(item => item.ownerId));
+  const allPlayersDoneInitial = state.players.length > 0 && state.players.every(p => initialPlacementDone.has(p.id));
+
+  if (phase === 'waiting') return t('game.phase.waiting');
+  if (phase === 'ended') return t('game.phase.ended');
+  if (gs.awaitingRps) return t('game.phase.rps');
+  if (!allPlayersDoneInitial) return t('game.phase.place');
+  if (gs.initialDeclareRequired) return t('game.phase.firstDeclare');
+  if (gs.revealMode) return t('game.phase.reveal');
+  return t(`game.phase.${phase}`);
+}
+
+function getCurrentInstruction() {
+  const gs = state.gameState || {};
+  const currentPlayer = state.players.find(p => p.id === gs.currentTurn);
+  const declarer = state.players.find(p => p.id === gs.declaredBy);
+  const initialPlacementDone = new Set((gs.tableCards || []).map(item => item.ownerId));
+  const allPlayersDoneInitial = state.players.length > 0 && state.players.every(p => initialPlacementDone.has(p.id));
+  const isInitialDeclarePhase = allPlayersDoneInitial && !!gs.initialDeclareRequired;
+  const isMyTurn = state.playerId && gs.currentTurn === state.playerId;
+  const iPlacedInitialCard = initialPlacementDone.has(state.playerId);
+  const declaredBlack = Number.isInteger(gs.declaredBlack) ? gs.declaredBlack : 0;
+
+  if (state.phase === 'waiting') {
+    if (state.playerId === state.hostId) return t('game.instruction.waiting.host');
+    return t('game.instruction.waiting.player');
+  }
+
+  if (state.phase === 'ended') {
+    if (state.gameState?.awaitingContinue) {
+      return state.playerId === state.hostId
+        ? t('game.instruction.ended.hostContinue')
+        : t('game.instruction.ended.playerContinue');
+    }
+    return t('game.instruction.ended.review');
+  }
+
+  if (gs.awaitingRps) {
+    const inRpsParticipants = (gs.rpsParticipants || []).includes(state.playerId);
+    return inRpsParticipants
+      ? t('game.instruction.rps.self')
+      : t('game.instruction.rps.wait');
+  }
+
+  if (!allPlayersDoneInitial) {
+    if (!iPlacedInitialCard && isMyTurn) return t('game.instruction.place.self');
+    if (iPlacedInitialCard) return t('game.instruction.place.done');
+    return t('game.instruction.place.wait', { name: currentPlayer?.name || '-' });
+  }
+
+  if (isInitialDeclarePhase) {
+    if (gs.forcedFirstDeclarer === state.playerId) return t('game.instruction.firstDeclare.self');
+    return t('game.instruction.firstDeclare.wait', { name: currentPlayer?.name || '-' });
+  }
+
+  if (gs.revealMode) {
+    if (gs.declaredBy === state.playerId) {
+      return t('game.instruction.reveal.self', { count: gs.declaredBlack || 0 });
+    }
+    return t('game.instruction.reveal.wait', { name: declarer?.name || '-' });
+  }
+
+  if (isMyTurn) {
+    if (declaredBlack === 0) return t('game.instruction.turn.selfNoDeclare');
+    return t('game.instruction.turn.selfDeclared', { count: declaredBlack });
+  }
+
+  return t('game.instruction.turn.wait', { name: currentPlayer?.name || '-' });
 }
 
 function renderPlayerList() {
@@ -248,12 +330,48 @@ function renderMyHand() {
 
 function renderCommunityCards(cards) {
   const revealableSet = getRevealableTableIndexes(cards);
-  communityCards.innerHTML = cards.map((card, index) => {
-    const ownerName = card.ownerName || t('game.table.unknown');
-    const mineSuffix = card.ownerId === state.playerId ? t('game.table.mine') : '';
-    const ownerTag = `<span class="table-card-owner">${ownerName}${mineSuffix}</span>`;
-    const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
-    if (card.faceDown) {
+  const piles = [];
+  const pileMap = new Map();
+
+  cards.forEach((card, index) => {
+    if (!pileMap.has(card.ownerId)) {
+      const ownerName = card.ownerName || t('game.table.unknown');
+      const mineSuffix = card.ownerId === state.playerId ? t('game.table.mine') : '';
+      const pile = {
+        ownerId: card.ownerId,
+        ownerName: `${ownerName}${mineSuffix}`,
+        cards: [],
+      };
+      pileMap.set(card.ownerId, pile);
+      piles.push(pile);
+    }
+    const targetPile = pileMap.get(card.ownerId);
+    targetPile.cards.push({
+      ...card,
+      globalIndex: index,
+      ownerSlotIndex: targetPile.cards.length,
+    });
+  });
+
+  communityCards.innerHTML = piles.map((pile) => {
+    const hiddenCards = pile.cards.filter(card => card.faceDown);
+    const revealedCards = pile.cards.filter(card => !card.faceDown);
+    const displayedHiddenCards = [...hiddenCards];
+    const stackHeight = pile.cards.length
+      ? 90 + Math.max(0, pile.cards.length - 1) * 18
+      : 0;
+    const cardsHtml = displayedHiddenCards.map((card, pileIndex) => {
+      const index = card.globalIndex;
+      const ownerTag = pileIndex === displayedHiddenCards.length - 1
+        ? `<span class="table-card-owner">${pile.ownerName}</span>`
+        : '';
+      const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
+      const buriedClass = pileIndex < displayedHiddenCards.length - 1 ? 'is-buried' : '';
+      const isTopCard = pileIndex === displayedHiddenCards.length - 1;
+      const revealableClass = isTopCard && revealableSet.has(index) ? 'is-top-revealable' : '';
+      const visualOffset = (pile.cards.length - 1 - card.ownerSlotIndex) * 18;
+      const style = `top:${visualOffset}px; z-index:${pileIndex + 1};`;
+
       const selected = state.selectedTableCardIndex === index ? 'selected' : '';
       const revealMode = !!state.gameState?.revealMode;
       const revealable = revealableSet.has(index);
@@ -262,20 +380,42 @@ function renderCommunityCards(cards) {
       const tip = revealMode && !revealable
         ? t('game.table.faceDownLocked', { index: index + 1 })
         : t('game.table.faceDown', { index: index + 1 });
-      return `<div class="card face-down ${selected} ${locked} ${entering}" title="${tip}" onclick="toggleTableCard(${index})">${ownerTag}${orderTag}</div>`;
-    }
-    const isRed = isCardRed(card);
-    const colorText = getCardColorText(card);
-    const flipped = state.flippingTableCardIndexes.has(index) ? 'flip-in' : '';
-    return `<div class="card ${isRed ? 'red' : 'black'} ${flipped}">
-      ${ownerTag}
-      ${orderTag}
-      <div class="card-corner-top">${colorText}</div>
-      <div class="card-rank">${colorText}</div>
-      <div class="card-corner-bottom">${colorText}</div>
-    </div>`;
+      const onclick = isTopCard
+        ? `onclick="toggleTableCard(${index})"`
+        : `onclick="showPileHint('${pile.ownerId}')"`;
+      return `<div class="community-pile-card ${buriedClass} ${revealableClass}" style="${style}" ${onclick}><div class="card face-down ${selected} ${locked} ${entering}" title="${tip}">${ownerTag}${orderTag}</div></div>`;
+    }).join('');
+
+    const revealedHtml = revealedCards.map((card) => {
+      const index = card.globalIndex;
+      const isRed = isCardRed(card);
+      const colorText = getCardColorText(card);
+      const flipped = state.flippingTableCardIndexes.has(index) ? 'flip-in' : '';
+      const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
+      return `<div class="card ${isRed ? 'red' : 'black'} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div>`;
+    }).join('');
+
+    const hintClass = state.pileHintOwnerId === pile.ownerId ? 'show' : '';
+    const hiddenCountText = hiddenCards.length > 0
+      ? t('game.table.hiddenCount', { count: hiddenCards.length })
+      : '';
+    const stackHtml = hiddenCards.length > 0
+      ? `<div class="community-pile-stack" style="height:${stackHeight}px">${cardsHtml}</div>`
+      : '<div class="community-pile-stack" style="height:0"></div>';
+    return `<div class="community-pile revealed-first"><div class="community-pile-name">${pile.ownerName}</div><div class="community-pile-revealed">${revealedHtml}</div><div class="community-pile-hidden-count">${hiddenCountText}</div>${stackHtml}<div class="community-pile-hint ${hintClass}">${state.pileHintOwnerId === pile.ownerId ? t('game.table.stackTop') : ''}</div></div>`;
   }).join('');
 }
+
+window.showPileHint = function(ownerId) {
+  state.pileHintOwnerId = ownerId;
+  renderCommunityCards(state.communityCards);
+  clearTimeout(state._pileHintTimer);
+  state._pileHintTimer = setTimeout(() => {
+    state.pileHintOwnerId = null;
+    renderCommunityCards(state.communityCards);
+  }, 1600);
+  addSystemMessage(t('game.table.stackTop'));
+};
 
 function getRevealableTableIndexes(cards) {
   const seenOwners = new Set();
@@ -326,6 +466,82 @@ function updateGameInfo() {
       by
     });
   }
+  if (phaseInstruction) {
+    phaseInstruction.textContent = getCurrentInstruction();
+  }
+}
+
+function getActionDescription(action) {
+  const gs = state.gameState || {};
+  const declaredBlack = Number.isInteger(gs.declaredBlack) ? gs.declaredBlack : 0;
+
+  switch (action) {
+    case 'place_face_down':
+      return t('game.actionDesc.place');
+    case 'reveal_table_card':
+      return t('game.actionDesc.reveal');
+    case 'declare':
+      return declaredBlack > 0
+        ? t('game.actionDesc.declareRaise', { count: declaredBlack })
+        : t('game.actionDesc.declareStart');
+    case 'pass':
+      return t('game.actionDesc.pass', { count: declaredBlack });
+    case 'rps_pick':
+      return t('game.actionDesc.rps');
+    default:
+      return '';
+  }
+}
+
+function renderActionButtons(actions) {
+  actionPanel.innerHTML = actions.map(a => `
+    <div class="action-option ${a.disabled ? 'is-disabled' : ''}">
+      <button class="btn btn-secondary" ${a.disabled ? 'disabled' : `onclick="sendAction('${a.action}')"`}>
+        ${a.label}
+      </button>
+      <div class="action-desc ${a.disabled ? 'is-disabled' : ''}">${a.disabled ? a.disabledReason : getActionDescription(a.action)}</div>
+    </div>
+  `).join('');
+}
+
+function buildTurnActionOptions() {
+  const gs = state.gameState || {};
+  const isRevealMode = !!gs.revealMode;
+  const declaredBlack = Number.isInteger(gs.declaredBlack) ? gs.declaredBlack : 0;
+  const options = [];
+
+  if (isRevealMode) {
+    options.push({
+      label: t('game.action.reveal'),
+      action: 'reveal_table_card',
+      disabled: state.selectedTableCardIndex == null,
+      disabledReason: t('game.actionDisabled.revealSelect'),
+    });
+    return options;
+  }
+
+  options.push({
+    label: t('game.action.place'),
+    action: 'place_face_down',
+    disabled: !state.myHand.length,
+    disabledReason: t('game.actionDisabled.noHand'),
+  });
+
+  options.push({
+    label: t('game.action.declare'),
+    action: 'declare',
+    disabled: false,
+    disabledReason: '',
+  });
+
+  options.push({
+    label: t('game.action.pass'),
+    action: 'pass',
+    disabled: declaredBlack === 0,
+    disabledReason: t('game.actionDisabled.passNeedsDeclare'),
+  });
+
+  return options;
 }
 
 /**
@@ -361,9 +577,18 @@ function renderActionPanel(actions = []) {
       return;
     }
     actionPanel.innerHTML = `
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'rock' })">${t('game.action.rock')}</button>
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'scissors' })">${t('game.action.scissors')}</button>
-      <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'paper' })">${t('game.action.paper')}</button>
+      <div class="action-option">
+        <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'rock' })">${t('game.action.rock')}</button>
+        <div class="action-desc">${t('game.actionDesc.rpsRock')}</div>
+      </div>
+      <div class="action-option">
+        <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'scissors' })">${t('game.action.scissors')}</button>
+        <div class="action-desc">${t('game.actionDesc.rpsScissors')}</div>
+      </div>
+      <div class="action-option">
+        <button class="btn btn-secondary" onclick="sendAction('rps_pick', { choice: 'paper' })">${t('game.action.paper')}</button>
+        <div class="action-desc">${t('game.actionDesc.rpsPaper')}</div>
+      </div>
     `;
     return;
   }
@@ -371,15 +596,18 @@ function renderActionPanel(actions = []) {
   // 首次声明阶段：所有玩家都只显示“声明”。
   if (isInitialDeclarePhase) {
     if (forcedFirstDeclarer && forcedFirstDeclarer !== state.playerId) {
-      actionPanel.innerHTML = `<span class="hint">${t('game.msg.waitFirstDeclarer')}</span>`;
+      renderActionButtons([
+        {
+          label: t('game.action.declare'),
+          action: 'declare',
+          disabled: true,
+          disabledReason: t('game.actionDisabled.waitFirstDeclarer', { name: state.players.find(p => p.id === forcedFirstDeclarer)?.name || '-' }),
+        }
+      ]);
       return;
     }
     actions = actions.filter(a => a.action === 'declare');
-    actionPanel.innerHTML = actions.map(a => `
-      <button class="btn btn-secondary" onclick="sendAction('${a.action}')">
-        ${a.label}
-      </button>
-    `).join('');
+    renderActionButtons(actions);
     return;
   }
 
@@ -391,12 +619,12 @@ function renderActionPanel(actions = []) {
 
   if (isRevealMode) {
     if (isDeclarer) {
-      actions = actions.filter(a => a.action === 'reveal_table_card');
+      actions = buildTurnActionOptions().filter(a => a.action === 'reveal_table_card');
     } else {
       actions = [];
     }
   } else {
-    actions = actions.filter(a => a.action !== 'reveal_table_card');
+    actions = buildTurnActionOptions();
 
     // 开局首次覆盖阶段：每位玩家尚未完成首次扣置前，只允许扣置。
     if (!allPlayersDoneInitial && !iPlacedInitialCard) {
@@ -406,14 +634,6 @@ function renderActionPanel(actions = []) {
     } else if (state.gameState?.initialDeclareRequired) {
       // 仅首次正式回合强制声明。
       actions = actions.filter(a => a.action === 'declare');
-    } else if (!state.myHand.length) {
-      // 手中无牌时不能扣置。
-      actions = actions.filter(a => a.action !== 'place_face_down');
-    }
-
-    // 规则更新：当前已声明黑牌数为 0 时，不能选择过。
-    if (declaredBlack === 0) {
-      actions = actions.filter(a => a.action !== 'pass');
     }
   }
 
@@ -422,11 +642,7 @@ function renderActionPanel(actions = []) {
     return;
   }
 
-  actionPanel.innerHTML = actions.map(a => `
-    <button class="btn btn-secondary" onclick="sendAction('${a.action}')">
-      ${a.label}
-    </button>
-  `).join('');
+  renderActionButtons(actions);
 }
 
 // ── 手牌选择 ──────────────────────────────────────────────────────
@@ -445,16 +661,18 @@ window.toggleTableCard = function(index) {
   if (state.gameState?.revealMode) {
     const revealableSet = getRevealableTableIndexes(state.communityCards);
     if (!revealableSet.has(index)) {
-      addSystemMessage(t('game.table.stackTop'));
+      window.showPileHint(target.ownerId);
       return;
     }
   }
+  state.pileHintOwnerId = null;
   if (state.selectedTableCardIndex === index) {
     state.selectedTableCardIndex = null;
   } else {
     state.selectedTableCardIndex = index;
   }
   renderCommunityCards(state.communityCards);
+  renderActionPanel();
 };
 
 // ── 动作发送 ──────────────────────────────────────────────────────
