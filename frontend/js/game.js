@@ -26,6 +26,7 @@ const state = {
   lastCanContinue: false,
   pileHintOwnerId: null,
   gameState:  {},
+  gameConfig: {},
 };
 
 // ── DOM 引用 ──────────────────────────────────────────────────────
@@ -99,6 +100,7 @@ socket.on('room_update', (data) => {
   state.hostId   = data.hostId;
   state.phase    = data.phase;
   state.gameState = data.gameState || {};
+  state.gameConfig = data.gameConfig || state.gameConfig || {};
   renderPhase(data.phase);
   renderPlayerList();
   renderActionPanel();
@@ -115,6 +117,7 @@ socket.on('game_started', (data) => {
   state.hostId   = data.hostId || state.hostId;
   state.phase    = data.phase || 'playing';
   state.gameState = data.gameState || {};
+  state.gameConfig = data.gameConfig || state.gameConfig || {};
   state.communityCards = [];
   state.selectedTableCardIndex = null;
   state.pileHintOwnerId = null;
@@ -413,8 +416,9 @@ function renderCommunityCards(cards) {
       const flipped = isFreshReveal ? 'flip-in' : '';
       const isRed = isCardRed(card);
       const isWhite = isCardWhite(card);
+      const isHybrid = isCardHybrid(card);
       const impactClass = isFreshReveal
-        ? (isRed ? 'impact-red' : isWhite ? 'impact-white' : 'impact-black')
+        ? (isRed ? 'impact-red' : isWhite ? 'impact-white' : isHybrid ? 'impact-hybrid' : 'impact-black')
         : '';
       const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
       return `<div class="community-revealed-wrap ${impactClass}"><div class="card ${cardClass} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div></div>`;
@@ -467,12 +471,18 @@ function isCardWhite(card) {
   return card?.color === 'white';
 }
 
+function isCardHybrid(card) {
+  return card?.color === 'hybrid';
+}
+
 function getCardColorClass(card) {
+  if (isCardHybrid(card)) return 'hybrid';
   if (isCardWhite(card)) return 'white';
   return isCardRed(card) ? 'red' : 'black';
 }
 
 function getCardColorText(card) {
+  if (isCardHybrid(card)) return t('game.card.hybrid');
   if (isCardWhite(card)) return t('game.card.white');
   return isCardRed(card) ? t('game.card.red') : t('game.card.black');
 }
@@ -488,13 +498,24 @@ function updateGameInfo() {
   const declared = Number.isInteger(gs?.declaredBlack) ? gs.declaredBlack : 0;
   const declaredBy = gs?.declaredBy ? state.players.find(p => p.id === gs.declaredBy)?.name : null;
   const revealedBlack = Number.isInteger(gs?.revealedBlack) ? gs.revealedBlack : 0;
+  const revealedHybrid = Number.isInteger(gs?.revealedHybrid) ? gs.revealedHybrid : 0;
   if (gs?.revealMode) {
-    deckCount.textContent = t('game.table.deckInfoReveal', {
-      count: state.communityCards.length,
-      revealed: revealedBlack,
-      declared,
-      name: declaredBy || '-'
-    });
+    if (state.gameConfig?.includeHybridCard) {
+      deckCount.textContent = t('game.table.deckInfoRevealHybrid', {
+        count: state.communityCards.length,
+        revealed: revealedBlack,
+        declared,
+        hybrid: revealedHybrid,
+        name: declaredBy || '-'
+      });
+    } else {
+      deckCount.textContent = t('game.table.deckInfoReveal', {
+        count: state.communityCards.length,
+        revealed: revealedBlack,
+        declared,
+        name: declaredBy || '-'
+      });
+    }
   } else {
     const by = declaredBy ? t('game.table.by', { name: declaredBy }) : '';
     deckCount.textContent = t('game.table.deckInfoDeclared', {
@@ -886,6 +907,7 @@ function renderResultCards(cards, targetEl = resultCards) {
 function getResultTitle(result) {
   if (result?.resultCode === 'success_exact') return t('game.result.title.success_exact');
   if (result?.resultCode === 'fail_red') return t('game.result.title.fail_red');
+  if (result?.resultCode === 'fail_hybrid') return t('game.result.title.fail_hybrid');
   if (result?.resultCode === 'fail_over') return t('game.result.title.fail_over');
   if (result?.resultCode === 'fail_insufficient') return t('game.result.title.fail_insufficient');
   return result?.success ? t('game.result.title.success') : t('game.result.title.fail');
@@ -901,6 +923,9 @@ function getResultDetail(result) {
   }
   if (result?.resultCode === 'fail_red') {
     return t('game.result.detail.fail_red', { declarer, declared, revealed });
+  }
+  if (result?.resultCode === 'fail_hybrid') {
+    return t('game.result.detail.fail_hybrid', { declarer, declared, revealed });
   }
   if (result?.resultCode === 'fail_over') {
     return t('game.result.detail.fail_over', { declarer, declared, revealed });
@@ -933,6 +958,8 @@ function renderMyPlacedCards(cards) {
     const colorText = getCardColorText(c);
     const colorLabel = c.color === 'red'
       ? t('game.card.redLabel')
+      : c.color === 'hybrid'
+        ? t('game.card.hybridLabel')
       : c.color === 'white'
         ? t('game.card.whiteLabel')
         : t('game.card.blackLabel');
@@ -1053,10 +1080,12 @@ function localizeServerLogMessage(message) {
   m = message.match(/^(.*) 选择了过$/);
   if (m) return t('game.log.playerPassed', { name: m[1] });
 
-  m = message.match(/^翻开了 1 张牌，颜色是(红|黑|白)$/);
+  m = message.match(/^翻开了 1 张牌，颜色是(红|黑|白|黑红)$/);
   if (m) {
     const color = m[1] === '红'
       ? t('game.card.red')
+      : m[1] === '黑红'
+        ? t('game.card.hybrid')
       : m[1] === '白'
         ? t('game.card.white')
         : t('game.card.black');
@@ -1065,6 +1094,9 @@ function localizeServerLogMessage(message) {
 
   m = message.match(/^已翻黑牌 ([0-9]+)\/([0-9]+)$/);
   if (m) return t('game.log.revealedBlackProgress', { current: m[1], target: m[2] });
+
+  m = message.match(/^已翻黑牌 ([0-9]+)\/([0-9]+) · 黑红牌 ([0-9]+)$/);
+  if (m) return t('game.log.revealedHybridProgress', { current: m[1], target: m[2], hybrid: m[3] });
 
   m = message.match(/^声明失败：必须大于当前声明值 ([0-9]+)$/);
   if (m) return t('game.log.declareMustGreater', { current: m[1] });

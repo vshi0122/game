@@ -35,6 +35,7 @@ class Room {
     this.gameConfig = {
       continueMode: !!gameConfig?.continueMode,
       includeWhiteCard: !!gameConfig?.includeWhiteCard,
+      includeHybridCard: !!gameConfig?.includeHybridCard,
       successTarget: Number.isInteger(successTarget) ? Math.min(Math.max(successTarget, 1), 10) : 1,
       failTarget: Number.isInteger(failTarget) ? Math.min(Math.max(failTarget, 1), 10) : 1,
     };
@@ -307,6 +308,7 @@ class Room {
       maxPlayers: this.maxPlayers,
       continueMode: this.gameConfig.continueMode,
       includeWhiteCard: this.gameConfig.includeWhiteCard,
+      includeHybridCard: this.gameConfig.includeHybridCard,
     };
   }
 }

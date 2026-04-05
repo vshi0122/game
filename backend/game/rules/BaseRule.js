@@ -17,19 +17,19 @@ class BaseRule {
   }
 
   _buildInitialHand() {
-    const cards = this.room.gameConfig?.includeWhiteCard
-      ? [
-          { color: 'black' },
-          { color: 'black' },
-          { color: 'red' },
-          { color: 'white' },
-        ]
-      : [
-          { color: 'black' },
-          { color: 'black' },
-          { color: 'black' },
-          { color: 'red' },
-        ];
+    const cards = [
+      { color: 'black' },
+      { color: 'black' },
+      { color: 'black' },
+      { color: 'red' },
+    ];
+    let replaceIndex = 0;
+    if (this.room.gameConfig?.includeWhiteCard) {
+      cards[replaceIndex++] = { color: 'white' };
+    }
+    if (this.room.gameConfig?.includeHybridCard) {
+      cards[replaceIndex++] = { color: 'hybrid' };
+    }
     for (let i = cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [cards[i], cards[j]] = [cards[j], cards[i]];
@@ -205,6 +205,7 @@ class BaseRule {
     this.room.gameState.passedPlayers = [];
     this.room.gameState.revealMode = false;
     this.room.gameState.revealedBlack = 0;
+    this.room.gameState.revealedHybrid = 0;
   }
 
   _buildRoundResultCards() {
@@ -265,7 +266,11 @@ class BaseRule {
     }
 
     const remainingBlack = tableCards.filter(item => item.faceDown && item.card?.color === 'black').length;
-    if (revealedBlack + remainingBlack < declaredBlack) {
+    const remainingHybrid = tableCards.filter(item => item.faceDown && item.card?.color === 'hybrid').length;
+    const revealedHybrid = gs.revealedHybrid || 0;
+    const hybridPotentialCap = this.room.gameConfig?.includeHybridCard ? Math.max(0, 1 - revealedHybrid) : 0;
+    const effectiveHybridPotential = Math.min(remainingHybrid, hybridPotentialCap);
+    if (revealedBlack + remainingBlack + effectiveHybridPotential < declaredBlack) {
       gs.info = `${declarerName} 翻牌失败`;
       this._syncState();
       this.room.handleRoundOutcome({
@@ -296,6 +301,7 @@ class BaseRule {
 
     gs.revealMode = true;
     gs.revealedBlack = 0;
+    gs.revealedHybrid = 0;
     gs.currentTurn = declaredBy;
     gs.info = '进入翻牌阶段，由声明者翻牌';
 
@@ -315,7 +321,8 @@ class BaseRule {
    * @param {import('../Deck')} deck  - 已洗好的牌堆
    */
   onGameStart(players, deck) {
-    // 规则 1：每人 4 张牌；默认 3 黑 1 红，若开启白牌模式则为 2 黑 1 红 1 白。
+    // 规则 1：每人 4 张牌；默认 3 黑 1 红。
+    // 开启白牌模式时：将 1 张黑牌替换为白牌；开启黑红牌模式时：再替换 1 张黑牌为黑红牌。
     for (const player of players) {
       player.hand = this._buildInitialHand();
       // 私发手牌（其他玩家不可见）
@@ -337,6 +344,7 @@ class BaseRule {
       passedPlayers: [],
       revealMode: false,
       revealedBlack: 0,
+      revealedHybrid: 0,
       initialDeclareRequired: false,
       forcedFirstDeclarer: null,
       awaitingRps: false,
@@ -584,6 +592,7 @@ class BaseRule {
       gs.passedPlayers = [];
       gs.revealMode = false;
       gs.revealedBlack = 0;
+      gs.revealedHybrid = 0;
       gs.initialDeclareRequired = false;
       gs.forcedFirstDeclarer = null;
 
@@ -682,6 +691,8 @@ class BaseRule {
       target.faceDown = false;
       const colorText = target.card.color === 'red'
         ? '红'
+        : target.card.color === 'hybrid'
+          ? '黑红'
         : target.card.color === 'white'
           ? '白'
           : '黑';
@@ -709,6 +720,28 @@ class BaseRule {
         return;
       }
 
+      if (target.card.color === 'hybrid') {
+        gs.revealedHybrid = (gs.revealedHybrid || 0) + 1;
+        if (gs.revealedHybrid >= 2) {
+          const declarer = this.room.players.get(gs.declaredBy);
+          const declarerName = declarer?.name || '声明玩家';
+          gs.info = `${declarerName} 翻到第 2 张黑红牌，判负`;
+          this._syncState();
+          this.room.handleRoundOutcome({
+            declarerId: gs.declaredBy,
+            success: false,
+            resultCode: 'fail_hybrid',
+            declaredBlack: gs.declaredBlack || 0,
+            revealedBlack: gs.revealedBlack || 0,
+            winners: [],
+            revealedCards: this._buildRoundResultCards(),
+          });
+          return;
+        }
+        // 第一张黑红牌视为 1 张黑牌
+        gs.revealedBlack = (gs.revealedBlack || 0) + 1;
+      }
+
       if (target.card.color === 'black') {
         gs.revealedBlack = (gs.revealedBlack || 0) + 1;
       }
@@ -716,7 +749,9 @@ class BaseRule {
       this.room._broadcast('action_ack', {
         playerId,
         action,
-        message: `已翻黑牌 ${gs.revealedBlack}/${gs.declaredBlack}`,
+        message: this.room.gameConfig?.includeHybridCard
+          ? `已翻黑牌 ${gs.revealedBlack}/${gs.declaredBlack} · 黑红牌 ${gs.revealedHybrid || 0}`
+          : `已翻黑牌 ${gs.revealedBlack}/${gs.declaredBlack}`,
       });
 
       if (!this._checkRevealResult()) {

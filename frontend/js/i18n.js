@@ -22,6 +22,10 @@
       'index.whiteModeDesc': '开启后：每位玩家初始牌变为 2 黑 + 1 红 + 1 白；白牌不算黑也不判红。',
       'index.whiteModeOn': '白牌模式：开',
       'index.whiteModeOff': '白牌模式：关',
+      'index.hybridMode': '黑红牌模式（可选）',
+      'index.hybridModeDesc': '开启后：首次翻到黑红牌按 1 张黑牌计；若本轮翻到第 2 张黑红牌，立即按翻红牌失败。',
+      'index.hybridModeOn': '黑红牌模式：开',
+      'index.hybridModeOff': '黑红牌模式：关',
       'index.create': '创建',
       'index.join': '加入',
       'index.refresh': '🔄 刷新',
@@ -117,15 +121,18 @@
       'game.table.top': '栈顶',
       'game.table.none': '你还没有放过牌',
       'game.table.deckInfoReveal': '场牌 {count} 张 · 翻牌中 {revealed}/{declared}（声明者：{name}）',
+      'game.table.deckInfoRevealHybrid': '场牌 {count} 张 · 翻牌中 {revealed}/{declared} · 黑红牌 {hybrid}（声明者：{name}）',
       'game.table.deckInfoDeclared': '场牌 {count} 张 · 已声明黑牌：{declared}{by}',
       'game.table.by': '（{name}）',
 
       'game.card.red': '红',
       'game.card.black': '黑',
       'game.card.white': '白',
+      'game.card.hybrid': '黑红',
       'game.card.redLabel': '红牌',
       'game.card.blackLabel': '黑牌',
       'game.card.whiteLabel': '白牌',
+      'game.card.hybridLabel': '黑红牌',
 
       'game.msg.disconnected': '与服务器断开连接，正在重连…',
       'game.msg.playerLeft': '{name} 离开了房间',
@@ -184,6 +191,7 @@
       'game.log.playerPassed': '{name} 选择了过',
       'game.log.revealedOneColor': '翻开了 1 张牌，颜色是{color}',
       'game.log.revealedBlackProgress': '已翻黑牌 {current}/{target}',
+      'game.log.revealedHybridProgress': '已翻黑牌 {current}/{target} · 黑红牌 {hybrid}',
       'game.log.declareMustGreater': '声明失败：必须大于当前声明值 {current}',
 
       'game.action.place': '扣置 1 张',
@@ -213,12 +221,14 @@
       'game.result.statLine': '{name} 成功{success}/失败{fail}',
       'game.result.title.success_exact': '声明成功，获胜！',
       'game.result.title.fail_red': '声明失败，翻到红牌',
+      'game.result.title.fail_hybrid': '声明失败，黑红牌反噬',
       'game.result.title.fail_over': '声明失败，黑牌超出',
       'game.result.title.fail_insufficient': '声明失败，无法达成目标',
       'game.result.title.success': '本轮胜利',
       'game.result.title.fail': '本轮失败',
       'game.result.detail.success_exact': '{declarer} 声明黑牌 {declared}，实际翻出黑牌 {revealed}，声明达成。',
       'game.result.detail.fail_red': '{declarer} 在翻牌阶段翻到红牌，立即判负。',
+      'game.result.detail.fail_hybrid': '{declarer} 在本轮翻到第 2 张黑红牌，触发反噬判负。',
       'game.result.detail.fail_over': '{declarer} 声明黑牌 {declared}，但已翻出黑牌 {revealed}（超出）。',
       'game.result.detail.fail_insufficient': '{declarer} 声明黑牌 {declared}，剩余牌不足以达成目标。',
       'game.result.cardMeta': '来源：{owner}<br>场上序号 #{globalOrder} · 该玩家序号 #{ownerOrder}',
@@ -229,7 +239,7 @@
       'rules.backLobby': '返回大厅',
       'rules.backGame': '返回游戏页',
       'rules.1.title': '1. 牌与开局',
-      'rules.1.1': '每位玩家开局获得 4 张牌：默认是 3 黑 1 红；若房主开启白牌模式，则改为 2 黑 1 红 1 白。',
+      'rules.1.1': '每位玩家开局获得 4 张牌：默认是 3 黑 1 红；开启白牌模式会将其中 1 张黑牌替换为白牌；开启黑红牌模式会再将 1 张黑牌替换为黑红牌。',
       'rules.1.2': '开局阶段每位玩家必须先手动扣置 1 张牌到场上。',
       'rules.1.3': '所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。',
       'rules.2.title': '2. 回合可执行动作',
@@ -242,7 +252,7 @@
       'rules.3.2': '仅声明者可翻牌，且必须按每位玩家的“栈顶顺序”翻牌，不能跳层。',
       'rules.3.3': '翻到红牌立即失败。',
       'rules.3.4': '当已翻黑牌数达到声明值即成功。',
-      'rules.3.5': '若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。',
+      'rules.3.5': '若已翻黑牌超过声明值或剩余牌不可能达成声明值，则失败。黑红牌在本轮第 1 张视为黑牌，第 2 张起立即判负。',
       'rules.4.title': '4. 多轮继续模式',
       'rules.4.1': '创建房间时可开启“继续游戏模式”。',
       'rules.4.2': '可设置成功次数和失败次数阈值（例如成功 2 次或失败 2 次结束整场）。',
@@ -267,6 +277,10 @@
       'index.whiteModeDesc': 'When enabled, each player starts with 2 black + 1 red + 1 white. White cards are neither black-count nor instant-fail red.',
       'index.whiteModeOn': 'White mode: ON',
       'index.whiteModeOff': 'White mode: OFF',
+      'index.hybridMode': 'Hybrid Card Mode (Optional)',
+      'index.hybridModeDesc': 'When enabled, the first hybrid reveal counts as 1 black card; revealing a second hybrid in the same round immediately fails as red-card bust.',
+      'index.hybridModeOn': 'Hybrid mode: ON',
+      'index.hybridModeOff': 'Hybrid mode: OFF',
       'index.create': 'Create',
       'index.join': 'Join',
       'index.refresh': '🔄 Refresh',
@@ -362,15 +376,18 @@
       'game.table.top': 'Top',
       'game.table.none': 'You have not placed any cards yet',
       'game.table.deckInfoReveal': 'Table {count} cards · Revealing {revealed}/{declared} (Declarer: {name})',
+      'game.table.deckInfoRevealHybrid': 'Table {count} cards · Revealing {revealed}/{declared} · Hybrid {hybrid} (Declarer: {name})',
       'game.table.deckInfoDeclared': 'Table {count} cards · Declared black cards: {declared}{by}',
       'game.table.by': ' ({name})',
 
       'game.card.red': 'Red',
       'game.card.black': 'Black',
       'game.card.white': 'White',
+      'game.card.hybrid': 'Hybrid',
       'game.card.redLabel': 'Red card',
       'game.card.blackLabel': 'Black card',
       'game.card.whiteLabel': 'White card',
+      'game.card.hybridLabel': 'Hybrid card',
 
       'game.msg.disconnected': 'Disconnected from server. Reconnecting...',
       'game.msg.playerLeft': '{name} left the room',
@@ -429,6 +446,7 @@
       'game.log.playerPassed': '{name} passed.',
       'game.log.revealedOneColor': 'Revealed 1 card, color: {color}.',
       'game.log.revealedBlackProgress': 'Revealed black cards {current}/{target}.',
+      'game.log.revealedHybridProgress': 'Revealed black cards {current}/{target} · Hybrid {hybrid}.',
       'game.log.declareMustGreater': 'Declare failed: value must be greater than current {current}.',
 
       'game.action.place': 'Place 1 Face-down',
@@ -458,12 +476,14 @@
       'game.result.statLine': '{name} success {success}/fail {fail}',
       'game.result.title.success_exact': 'Declaration Success',
       'game.result.title.fail_red': 'Declaration Failed: Red Card',
+      'game.result.title.fail_hybrid': 'Declaration Failed: Hybrid Backfire',
       'game.result.title.fail_over': 'Declaration Failed: Black Cards Exceeded',
       'game.result.title.fail_insufficient': 'Declaration Failed: Target Impossible',
       'game.result.title.success': 'Round Won',
       'game.result.title.fail': 'Round Lost',
       'game.result.detail.success_exact': '{declarer} declared {declared} black cards and revealed {revealed}. Target reached.',
       'game.result.detail.fail_red': '{declarer} revealed a red card during reveal phase and immediately lost.',
+      'game.result.detail.fail_hybrid': '{declarer} revealed a second hybrid card in this round and immediately lost due to backfire.',
       'game.result.detail.fail_over': '{declarer} declared {declared} black cards but revealed {revealed} (exceeded).',
       'game.result.detail.fail_insufficient': '{declarer} declared {declared} black cards, but remaining cards could not reach the target.',
       'game.result.cardMeta': 'Source: {owner}<br>Table order #{globalOrder} · Player stack order #{ownerOrder}',
@@ -474,7 +494,7 @@
       'rules.backLobby': 'Back to Lobby',
       'rules.backGame': 'Back to Game',
       'rules.1.title': '1. Cards and Setup',
-      'rules.1.1': 'Each player starts with 4 cards: default is 3 black + 1 red; if host enables White Card Mode, it becomes 2 black + 1 red + 1 white.',
+      'rules.1.1': 'Each player starts with 4 cards: default is 3 black + 1 red; White Card Mode replaces one black card with white; Hybrid Mode replaces another black card with a hybrid card.',
       'rules.1.2': 'During setup, each player must place 1 face-down card on the table.',
       'rules.1.3': 'After all players place the first card, play Rock-Paper-Scissors to decide the first declarer.',
       'rules.2.title': '2. Available Actions Per Turn',
@@ -487,7 +507,7 @@
       'rules.3.2': 'Only the declarer can reveal cards, and must reveal in stack-top order for each player.',
       'rules.3.3': 'Revealing a red card causes immediate failure.',
       'rules.3.4': 'If revealed black count reaches declared value, it is a success.',
-      'rules.3.5': 'If revealed black exceeds declared value, or target becomes impossible with remaining cards, it is a failure.',
+      'rules.3.5': 'If revealed black exceeds declared value, or target becomes impossible with remaining cards, it is a failure. The first hybrid counts as black; revealing a second hybrid in the same round causes immediate failure.',
       'rules.4.title': '4. Continue Match Mode',
       'rules.4.1': 'You can enable Continue Match Mode when creating a room.',
       'rules.4.2': 'Set success and failure thresholds (for example, 2 successes or 2 failures ends the match).',
@@ -554,6 +574,7 @@
     setText('label-or', 'index.or');
     setText('label-continue-mode', 'index.continueMode');
     setText('label-white-card-mode', 'index.whiteMode');
+    setText('label-hybrid-card-mode', 'index.hybridMode');
     setText('label-max-players', 'index.maxPlayers');
     setText('label-create-password', 'index.createPassword');
     setText('label-success-target', 'index.successTarget');
@@ -573,6 +594,7 @@
     const failInput = document.getElementById('fail-target');
     const continueDesc = document.getElementById('continue-mode-desc');
     const whiteModeDesc = document.getElementById('white-card-mode-desc');
+    const hybridModeDesc = document.getElementById('hybrid-card-mode-desc');
     if (continueDesc) {
       const success = successInput?.value || '2';
       const fail = failInput?.value || '2';
@@ -580,6 +602,9 @@
     }
     if (whiteModeDesc) {
       whiteModeDesc.textContent = t('index.whiteModeDesc');
+    }
+    if (hybridModeDesc) {
+      hybridModeDesc.textContent = t('index.hybridModeDesc');
     }
 
     const emptyHint = document.querySelector('#room-list .empty-hint');

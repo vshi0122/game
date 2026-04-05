@@ -16,6 +16,7 @@ const maxPlayersInput  = $('max-players');
 const createPwInput    = $('create-password');
 const continueModeInput = $('continue-mode');
 const whiteCardModeInput = $('white-card-mode');
+const hybridCardModeInput = $('hybrid-card-mode');
 const successTargetInput = $('success-target');
 const failTargetInput = $('fail-target');
 const roomIdInput      = $('room-id');
@@ -82,6 +83,7 @@ btnCreate.addEventListener('click', () => {
     gameConfig: {
       continueMode: continueModeInput.checked,
       includeWhiteCard: !!whiteCardModeInput?.checked,
+      includeHybridCard: !!hybridCardModeInput?.checked,
       successTarget: parseInt(successTargetInput.value, 10) || 1,
       failTarget: parseInt(failTargetInput.value, 10) || 1,
     },
@@ -141,7 +143,7 @@ function renderRoomList(rooms) {
     <li class="room-item">
       <div class="room-info">
         <div>${r.roomName}</div>
-        <div class="room-meta">ID: ${r.roomId} · ${t('index.peopleCountDetail', { joined: r.playerCount, max: r.maxPlayers })} · ${r.includeWhiteCard ? t('index.whiteModeOn') : t('index.whiteModeOff')}</div>
+        <div class="room-meta">ID: ${r.roomId} · ${t('index.peopleCountDetail', { joined: r.playerCount, max: r.maxPlayers })} · ${r.includeWhiteCard ? t('index.whiteModeOn') : t('index.whiteModeOff')} · ${r.includeHybridCard ? t('index.hybridModeOn') : t('index.hybridModeOff')}</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="quickJoin('${r.roomId}')">${t('index.join')}</button>
     </li>
