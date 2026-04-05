@@ -41,17 +41,26 @@
       <div class="action-block">
         <h2 id="label-create-room">创建房间</h2>
         <input type="text" id="room-name" placeholder="房间名称（选填）" maxlength="20" />
+        <div class="input-row inline-fields">
+          <label for="max-players" id="label-max-players" class="field-label">人数上限</label>
+          <label for="create-password" id="label-create-password" class="field-label">房间密码（可选）</label>
+        </div>
         <div class="input-row">
           <input type="number" id="max-players" placeholder="人数上限" min="2" max="8" value="4" />
           <input type="password" id="create-password" placeholder="密码（选填）" maxlength="16" />
         </div>
-        <div class="input-row">
+        <div class="input-row continue-mode-row">
           <label style="display:flex;align-items:center;gap:6px;font-size:0.86rem;color:var(--text-dim)">
             <input type="checkbox" id="continue-mode" checked />
             <span id="label-continue-mode">继续游戏模式</span>
           </label>
         </div>
-        <div class="input-row">
+        <p id="continue-mode-desc" class="form-hint">开启后：整场将在达到阈值时结束（例如 成功 2 次 或 失败 2 次）。</p>
+        <div class="input-row inline-fields continue-settings">
+          <label for="success-target" id="label-success-target" class="field-label">成功达到（次）</label>
+          <label for="fail-target" id="label-fail-target" class="field-label">失败达到（次）</label>
+        </div>
+        <div class="input-row continue-settings">
           <input type="number" id="success-target" placeholder="成功次数结束" min="1" max="10" value="2" />
           <input type="number" id="fail-target" placeholder="失败次数结束" min="1" max="10" value="2" />
         </div>

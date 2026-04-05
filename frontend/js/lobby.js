@@ -139,11 +139,19 @@ function renderRoomList(rooms) {
     <li class="room-item">
       <div class="room-info">
         <div>${r.roomName}</div>
-        <div class="room-meta">ID: ${r.roomId} · ${t('index.peopleCount', { count: `${r.playerCount}/${r.maxPlayers}` })}</div>
+        <div class="room-meta">ID: ${r.roomId} · ${t('index.peopleCountDetail', { joined: r.playerCount, max: r.maxPlayers })}</div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="quickJoin('${r.roomId}')">${t('index.join')}</button>
     </li>
   `).join('');
+}
+
+function updateContinueModeSummary() {
+  const descEl = $('continue-mode-desc');
+  if (!descEl) return;
+  const success = parseInt(successTargetInput.value, 10) || 1;
+  const fail = parseInt(failTargetInput.value, 10) || 1;
+  descEl.textContent = t('index.continueModeDesc', { success, fail });
 }
 
 window.quickJoin = function(roomId) {
@@ -170,12 +178,16 @@ window.quickJoin = function(roomId) {
       successTargetInput.value = '1';
       failTargetInput.value = '1';
     }
+    updateContinueModeSummary();
   };
   continueModeInput.addEventListener('change', updateContinueModeInputs);
+  successTargetInput.addEventListener('input', updateContinueModeSummary);
+  failTargetInput.addEventListener('input', updateContinueModeSummary);
   updateContinueModeInputs();
 
   window.addEventListener('lang_changed', () => {
     if (window.I18N) window.I18N.applyPage();
     renderRoomList(latestRooms);
+    updateContinueModeSummary();
   });
 })();

@@ -73,6 +73,15 @@
             <span id="deck-count">牌堆剩余：-</span>
           </div>
           <div id="phase-instruction" class="phase-instruction">请等待游戏开始</div>
+          <div id="table-settlement" class="table-settlement hidden">
+            <h3 id="table-result-title">本轮结束</h3>
+            <p id="table-result-detail"></p>
+            <div id="table-result-cards" class="result-cards"></div>
+            <div class="table-settlement-actions">
+              <button id="btn-table-continue-round" class="btn btn-secondary hidden">继续下一轮</button>
+              <button id="btn-table-back-lobby" class="btn btn-primary">返回大厅</button>
+            </div>
+          </div>
         </div>
 
         <!-- 我的手牌区 -->
@@ -96,6 +105,18 @@
           <div id="result-cards" class="result-cards"></div>
           <button id="btn-continue-round" class="btn btn-secondary hidden">继续下一轮</button>
           <button id="btn-back-lobby" class="btn btn-primary">返回大厅</button>
+        </div>
+      </div>
+
+      <div id="declare-modal" class="declare-modal hidden" role="dialog" aria-modal="true" aria-labelledby="declare-modal-title">
+        <div class="declare-modal-card">
+          <h3 id="declare-modal-title">声明黑牌数量</h3>
+          <p id="declare-modal-tip">当前声明值为 0，请输入更大的整数。</p>
+          <input id="declare-modal-input" type="number" min="1" max="99" step="1" placeholder="输入声明值" />
+          <div class="declare-modal-actions">
+            <button id="btn-declare-cancel" class="btn btn-ghost">取消</button>
+            <button id="btn-declare-confirm" class="btn btn-primary">确认声明</button>
+          </div>
         </div>
       </div>
     </main>

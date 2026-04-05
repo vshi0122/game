@@ -55,8 +55,20 @@ const deckCount      = $('deck-count');
 const phaseInstruction = $('phase-instruction');
 const resultCards    = $('result-cards');
 const btnContinueRound = $('btn-continue-round');
+const tableSettlement = $('table-settlement');
+const tableResultTitle = $('table-result-title');
+const tableResultDetail = $('table-result-detail');
+const tableResultCards = $('table-result-cards');
+const btnTableContinueRound = $('btn-table-continue-round');
+const btnTableBackLobby = $('btn-table-back-lobby');
 const myPlacedCardsEl = $('my-placed-cards');
 const turnBanner     = $('turn-banner');
+const declareModal = $('declare-modal');
+const declareModalTitle = $('declare-modal-title');
+const declareModalTip = $('declare-modal-tip');
+const declareModalInput = $('declare-modal-input');
+const btnDeclareCancel = $('btn-declare-cancel');
+const btnDeclareConfirm = $('btn-declare-confirm');
 const t = (key, vars) => (window.I18N ? window.I18N.t(key, vars) : key);
 
 // ── Socket 连接 ───────────────────────────────────────────────────
@@ -91,6 +103,7 @@ socket.on('room_update', (data) => {
   renderPlayerList();
   renderActionPanel();
   updateHostControls();
+  if (state.phase !== 'ended') hideTableSettlement();
 });
 
 socket.on('player_left', ({ playerName }) => {
@@ -105,6 +118,7 @@ socket.on('game_started', (data) => {
   state.communityCards = [];
   state.selectedTableCardIndex = null;
   state.pileHintOwnerId = null;
+  hideTableSettlement();
   showScreen('game');
   renderPhase(state.phase);
   renderPlayerList();
@@ -182,6 +196,7 @@ socket.on('round_over', (result) => {
 
 socket.on('match_continued', () => {
   state.phase = 'playing';
+  hideTableSettlement();
   showScreen('game');
   renderPhase(state.phase);
   addSystemMessage(t('game.msg.nextRound'));
@@ -329,6 +344,10 @@ function renderMyHand() {
 }
 
 function renderCommunityCards(cards) {
+  const rootStyle = getComputedStyle(document.documentElement);
+  const pileStep = Number.parseFloat(rootStyle.getPropertyValue('--pile-step')) || 18;
+  const tableCardHeight = Number.parseFloat(rootStyle.getPropertyValue('--table-card-h')) || 90;
+  const flippingNow = new Set(state.flippingTableCardIndexes);
   const revealableSet = getRevealableTableIndexes(cards);
   const piles = [];
   const pileMap = new Map();
@@ -358,7 +377,7 @@ function renderCommunityCards(cards) {
     const revealedCards = pile.cards.filter(card => !card.faceDown);
     const displayedHiddenCards = [...hiddenCards];
     const stackHeight = pile.cards.length
-      ? 90 + Math.max(0, pile.cards.length - 1) * 18
+      ? tableCardHeight + Math.max(0, pile.cards.length - 1) * pileStep
       : 0;
     const cardsHtml = displayedHiddenCards.map((card, pileIndex) => {
       const index = card.globalIndex;
@@ -369,7 +388,7 @@ function renderCommunityCards(cards) {
       const buriedClass = pileIndex < displayedHiddenCards.length - 1 ? 'is-buried' : '';
       const isTopCard = pileIndex === displayedHiddenCards.length - 1;
       const revealableClass = isTopCard && revealableSet.has(index) ? 'is-top-revealable' : '';
-      const visualOffset = (pile.cards.length - 1 - card.ownerSlotIndex) * 18;
+      const visualOffset = (pile.cards.length - 1 - card.ownerSlotIndex) * pileStep;
       const style = `top:${visualOffset}px; z-index:${pileIndex + 1};`;
 
       const selected = state.selectedTableCardIndex === index ? 'selected' : '';
@@ -390,7 +409,7 @@ function renderCommunityCards(cards) {
       const index = card.globalIndex;
       const isRed = isCardRed(card);
       const colorText = getCardColorText(card);
-      const flipped = state.flippingTableCardIndexes.has(index) ? 'flip-in' : '';
+      const flipped = flippingNow.has(index) ? 'flip-in' : '';
       const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
       return `<div class="card ${isRed ? 'red' : 'black'} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div>`;
     }).join('');
@@ -404,6 +423,8 @@ function renderCommunityCards(cards) {
       : '<div class="community-pile-stack" style="height:0"></div>';
     return `<div class="community-pile revealed-first"><div class="community-pile-name">${pile.ownerName}</div><div class="community-pile-revealed">${revealedHtml}</div><div class="community-pile-hidden-count">${hiddenCountText}</div>${stackHtml}<div class="community-pile-hint ${hintClass}">${state.pileHintOwnerId === pile.ownerId ? t('game.table.stackTop') : ''}</div></div>`;
   }).join('');
+  // Consume flip markers once so later rerenders (e.g. clicking hints) don't replay flip animation.
+  state.flippingTableCardIndexes.clear();
 }
 
 window.showPileHint = function(ownerId) {
@@ -469,6 +490,54 @@ function updateGameInfo() {
   if (phaseInstruction) {
     phaseInstruction.textContent = getCurrentInstruction();
   }
+}
+
+function updateDeclareModalText(currentDeclared) {
+  if (!declareModal) return;
+  declareModalTitle.textContent = t('game.declareModal.title');
+  declareModalTip.textContent = t('game.declareModal.tip', { current: currentDeclared });
+  declareModalInput.placeholder = t('game.declareModal.inputPlaceholder');
+  btnDeclareCancel.textContent = t('game.declareModal.cancel');
+  btnDeclareConfirm.textContent = t('game.declareModal.confirm');
+}
+
+function openDeclareModal(currentDeclared) {
+  if (!declareModal) return;
+  const nextMin = currentDeclared + 1;
+  declareModal.dataset.current = String(currentDeclared);
+  updateDeclareModalText(currentDeclared);
+  declareModalInput.min = String(Math.max(1, nextMin));
+  declareModalInput.value = String(nextMin);
+  declareModal.classList.remove('hidden');
+  declareModalInput.focus();
+  declareModalInput.select();
+}
+
+function closeDeclareModal() {
+  if (!declareModal) return;
+  declareModal.classList.add('hidden');
+}
+
+function submitDeclareFromModal() {
+  const currentDeclared = Number.parseInt(declareModal.dataset.current || '0', 10) || 0;
+  const input = declareModalInput.value.trim();
+  const value = Number.parseInt(input, 10);
+
+  if (!Number.isInteger(value) || value < 1) {
+    addSystemMessage(t('game.msg.declareInteger'));
+    declareModalInput.focus();
+    declareModalInput.select();
+    return;
+  }
+  if (value <= currentDeclared) {
+    addSystemMessage(t('game.msg.declareTooSmall', { current: currentDeclared }));
+    declareModalInput.focus();
+    declareModalInput.select();
+    return;
+  }
+
+  closeDeclareModal();
+  window.sendAction('declare', { declaredBlack: value });
 }
 
 function getActionDescription(action) {
@@ -549,6 +618,11 @@ function buildTurnActionOptions() {
  * 示例：[出牌, 摸牌, 过] 三个按钮。
  */
 function renderActionPanel(actions = []) {
+  if (state.phase === 'ended') {
+    actionPanel.innerHTML = `<span class="hint">${t('game.instruction.ended.review')}</span>`;
+    return;
+  }
+
   if (!actions.length) {
     actions = [
       { label: t('game.action.place'), action: 'place_face_down' },
@@ -656,6 +730,7 @@ window.toggleCard = function(index) {
 };
 
 window.toggleTableCard = function(index) {
+  if (state.phase === 'ended') return;
   const target = state.communityCards[index];
   if (!target || !target.faceDown) return;
   if (state.gameState?.revealMode) {
@@ -711,19 +786,11 @@ window.sendAction = function(action, extraData = {}) {
   }
 
   if (action === 'declare') {
-    const currentDeclared = Number.isInteger(state.gameState?.declaredBlack) ? state.gameState.declaredBlack : 0;
-    const input = window.prompt(t('game.msg.promptDeclare', { current: currentDeclared }));
-    if (input == null) return;
-    const value = Number.parseInt(input.trim(), 10);
-    if (!Number.isInteger(value) || value < 1) {
-      addSystemMessage(t('game.msg.declareInteger'));
+    if (!Number.isInteger(extraData.declaredBlack)) {
+      const currentDeclared = Number.isInteger(state.gameState?.declaredBlack) ? state.gameState.declaredBlack : 0;
+      openDeclareModal(currentDeclared);
       return;
     }
-    if (value <= currentDeclared) {
-      addSystemMessage(t('game.msg.declareTooSmall', { current: currentDeclared }));
-      return;
-    }
-    extraData = { ...extraData, declaredBlack: value };
   }
 
   if (action === 'place_face_down' && state.selectedCards.size !== 1) {
@@ -774,13 +841,13 @@ window.sendAction = function(action, extraData = {}) {
   emitAction();
 };
 
-function renderResultCards(cards) {
+function renderResultCards(cards, targetEl = resultCards) {
   if (!cards.length) {
-    resultCards.innerHTML = '';
+    targetEl.innerHTML = '';
     return;
   }
 
-  resultCards.innerHTML = cards.map(card => {
+  targetEl.innerHTML = cards.map(card => {
     const isRed = isCardRed(card);
     const colorText = getCardColorText(card);
     const ownerName = card.ownerName || t('game.table.unknown');
@@ -875,15 +942,22 @@ function announceTurn(playerId) {
 function showResultScreen(result, canContinue) {
   state.lastResult = result;
   state.lastCanContinue = !!canContinue;
-  showScreen('result');
-  $('result-title').textContent = getResultTitle(result) || t('game.result.roundOver');
+  showScreen('game');
+  tableSettlement.classList.remove('hidden');
+  tableResultTitle.textContent = getResultTitle(result) || t('game.result.roundOver');
   const statsLine = Array.isArray(result.stats) && result.stats.length
     ? `\n${t('game.result.stats', { line: result.stats.map(s => t('game.result.statLine', { name: s.name, success: s.successCount, fail: s.failCount })).join(' | ') })}`
     : '';
-  $('result-detail').textContent = getResultDetail(result) + statsLine;
-  renderResultCards(result.revealedCards || []);
+  tableResultDetail.textContent = getResultDetail(result) + statsLine;
+  renderResultCards(result.revealedCards || [], tableResultCards);
   const isHost = state.playerId === state.hostId;
+  btnTableContinueRound.classList.toggle('hidden', !(canContinue && isHost));
   btnContinueRound.classList.toggle('hidden', !(canContinue && isHost));
+}
+
+function hideTableSettlement() {
+  if (!tableSettlement) return;
+  tableSettlement.classList.add('hidden');
 }
 
 // ── 屏幕切换 ──────────────────────────────────────────────────────
@@ -1013,18 +1087,44 @@ btnCopyId.addEventListener('click', () => {
   });
 });
 
-$('btn-back-lobby').addEventListener('click', () => {
+const backToLobby = () => {
   socket.disconnect();
   location.href = 'index.html';
-});
+};
 
-btnContinueRound.addEventListener('click', () => {
+$('btn-back-lobby').addEventListener('click', backToLobby);
+if (btnTableBackLobby) btnTableBackLobby.addEventListener('click', backToLobby);
+
+const requestContinueRound = () => {
   socket.emit('continue_game', { roomId: state.roomId, playerId: state.playerId }, (res) => {
     if (!res?.success) {
       addSystemMessage(t('game.msg.continueFailed', { error: res?.error || 'Unknown error' }));
     }
   });
-});
+};
+
+btnContinueRound.addEventListener('click', requestContinueRound);
+if (btnTableContinueRound) btnTableContinueRound.addEventListener('click', requestContinueRound);
+
+if (btnDeclareCancel) btnDeclareCancel.addEventListener('click', closeDeclareModal);
+if (btnDeclareConfirm) btnDeclareConfirm.addEventListener('click', submitDeclareFromModal);
+if (declareModalInput) {
+  declareModalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitDeclareFromModal();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeDeclareModal();
+    }
+  });
+}
+if (declareModal) {
+  declareModal.addEventListener('click', (e) => {
+    if (e.target === declareModal) closeDeclareModal();
+  });
+}
 
 window.addEventListener('lang_changed', () => {
   if (window.I18N) window.I18N.applyPage();
@@ -1038,8 +1138,18 @@ window.addEventListener('lang_changed', () => {
   updateGameInfo();
   renderMyPlacedCards(state.myPlacedCards || []);
   btnReady.textContent = btnReady.dataset.ready === '1' ? t('game.unready') : t('game.ready');
-  if (!resultScreen.classList.contains('hidden') && state.lastResult) {
+  if (tableSettlement && !tableSettlement.classList.contains('hidden') && state.lastResult) {
     showResultScreen(state.lastResult, state.lastCanContinue);
+  }
+  if (declareModal && !declareModal.classList.contains('hidden')) {
+    const currentDeclared = Number.parseInt(declareModal.dataset.current || '0', 10) || 0;
+    updateDeclareModalText(currentDeclared);
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && declareModal && !declareModal.classList.contains('hidden')) {
+    closeDeclareModal();
   }
 });
 

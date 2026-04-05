@@ -17,16 +17,23 @@
       'index.publicRooms': '公开房间',
       'index.or': '或',
       'index.continueMode': '继续游戏模式',
+      'index.continueModeDesc': '开启后：整场将在达到阈值时结束（例如 成功 {success} 次 或 失败 {fail} 次）。',
       'index.create': '创建',
       'index.join': '加入',
       'index.refresh': '🔄 刷新',
       'index.noRooms': '暂无公开房间',
+      'index.maxPlayers': '人数上限',
+      'index.createPassword': '房间密码（可选）',
+      'index.successTarget': '成功达到（次）',
+      'index.failTarget': '失败达到（次）',
       'index.roomNamePlaceholder': '房间名称（可选）',
+      'index.maxPlayersPlaceholder': '2-8 人',
       'index.createPwPlaceholder': '房间密码（可选）',
       'index.namePlaceholder': '输入玩家名称…',
       'index.roomIdPlaceholder': '输入 6 位房间 ID',
       'index.joinPwPlaceholder': '房间密码（若有）',
       'index.peopleCount': '{count} 人',
+      'index.peopleCountDetail': '已加入 {joined} / 上限 {max} 人',
 
       'lobby.needName': '请先输入玩家名称',
       'lobby.connected': '已连接到服务器',
@@ -135,6 +142,11 @@
       'game.msg.startFailed': '开始失败：{error}',
       'game.msg.continueFailed': '继续失败：{error}',
       'game.msg.helloWait': '你好，{name}！等待其他玩家加入…',
+      'game.declareModal.title': '声明黑牌数量',
+      'game.declareModal.tip': '当前声明值为 {current}，请输入更大的整数。',
+      'game.declareModal.inputPlaceholder': '输入声明值',
+      'game.declareModal.confirm': '确认声明',
+      'game.declareModal.cancel': '取消',
 
       'game.log.rpsDrawReplay': '石头剪刀布平局，本轮参与者请重新选择',
       'game.log.rpsTiePlayoff': '石头剪刀布并列获胜，获胜玩家继续加赛',
@@ -244,16 +256,23 @@
       'index.publicRooms': 'Public Rooms',
       'index.or': 'OR',
       'index.continueMode': 'Continue Match Mode',
+      'index.continueModeDesc': 'When enabled, the match ends once a threshold is reached (e.g. {success} successes OR {fail} failures).',
       'index.create': 'Create',
       'index.join': 'Join',
       'index.refresh': '🔄 Refresh',
       'index.noRooms': 'No public rooms',
+      'index.maxPlayers': 'Max players',
+      'index.createPassword': 'Room password (optional)',
+      'index.successTarget': 'Success threshold',
+      'index.failTarget': 'Fail threshold',
       'index.roomNamePlaceholder': 'Room name (optional)',
+      'index.maxPlayersPlaceholder': '2-8 players',
       'index.createPwPlaceholder': 'Room password (optional)',
       'index.namePlaceholder': 'Enter player name...',
       'index.roomIdPlaceholder': 'Enter 6-digit room ID',
       'index.joinPwPlaceholder': 'Room password (if any)',
       'index.peopleCount': '{count} players',
+      'index.peopleCountDetail': 'Players: {joined}/{max}',
 
       'lobby.needName': 'Please enter your player name first',
       'lobby.connected': 'Connected to server',
@@ -362,6 +381,11 @@
       'game.msg.startFailed': 'Start failed: {error}',
       'game.msg.continueFailed': 'Continue failed: {error}',
       'game.msg.helloWait': 'Hi, {name}! Waiting for other players to join...',
+      'game.declareModal.title': 'Declare Black Card Count',
+      'game.declareModal.tip': 'Current declared value is {current}. Enter a greater integer.',
+      'game.declareModal.inputPlaceholder': 'Enter declared value',
+      'game.declareModal.confirm': 'Confirm',
+      'game.declareModal.cancel': 'Cancel',
 
       'game.log.rpsDrawReplay': 'RPS draw. Participants must choose again.',
       'game.log.rpsTiePlayoff': 'RPS tie among winners. Winners continue playoff.',
@@ -517,15 +541,30 @@
     setText('label-public-rooms', 'index.publicRooms');
     setText('label-or', 'index.or');
     setText('label-continue-mode', 'index.continueMode');
+    setText('label-max-players', 'index.maxPlayers');
+    setText('label-create-password', 'index.createPassword');
+    setText('label-success-target', 'index.successTarget');
+    setText('label-fail-target', 'index.failTarget');
     setText('btn-create', 'index.create');
     setText('btn-join', 'index.join');
     setText('btn-refresh', 'index.refresh');
 
     setPlaceholder('player-name', 'index.namePlaceholder');
     setPlaceholder('room-name', 'index.roomNamePlaceholder');
+    setPlaceholder('max-players', 'index.maxPlayersPlaceholder');
     setPlaceholder('create-password', 'index.createPwPlaceholder');
     setPlaceholder('room-id', 'index.roomIdPlaceholder');
     setPlaceholder('join-password', 'index.joinPwPlaceholder');
+
+    const successInput = document.getElementById('success-target');
+    const failInput = document.getElementById('fail-target');
+    const continueDesc = document.getElementById('continue-mode-desc');
+    if (continueDesc) {
+      const success = successInput?.value || '2';
+      const fail = failInput?.value || '2';
+      continueDesc.textContent = t('index.continueModeDesc', { success, fail });
+    }
+
     const emptyHint = document.querySelector('#room-list .empty-hint');
     if (emptyHint) emptyHint.textContent = t('index.noRooms');
   }
@@ -547,7 +586,13 @@
     setText('btn-send', 'game.send');
     setText('btn-continue-round', 'game.continueRound');
     setText('btn-back-lobby', 'game.backLobby');
+    setText('btn-table-continue-round', 'game.continueRound');
+    setText('btn-table-back-lobby', 'game.backLobby');
+    setText('declare-modal-title', 'game.declareModal.title');
+    setText('btn-declare-cancel', 'game.declareModal.cancel');
+    setText('btn-declare-confirm', 'game.declareModal.confirm');
     setPlaceholder('chat-input', 'game.chatPlaceholder');
+    setPlaceholder('declare-modal-input', 'game.declareModal.inputPlaceholder');
   }
 
   function applyRules() {

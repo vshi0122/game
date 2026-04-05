@@ -2,6 +2,15 @@
    游戏室专属样式
    ===================================================== */
 
+:root {
+  --table-card-w: clamp(46px, 5.1vw, 64px);
+  --table-card-h: clamp(66px, 7.2vw, 90px);
+  --pile-step: clamp(10px, 1.45vw, 18px);
+  --pile-width: clamp(84px, 9.2vw, 100px);
+  --revealed-card-w: clamp(40px, 4vw, 52px);
+  --revealed-card-h: clamp(58px, 5.7vw, 74px);
+}
+
 .game-body { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
 /* ── 顶部条 ── */
@@ -128,13 +137,16 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   background: rgba(0,0,0,0.3); border: 1px solid var(--card-border);
   border-radius: 8px; padding: 10px 18px;
   font-size: 0.9rem; display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: min(96vw, 560px);
 }
 .room-id-display strong { color: var(--gold); font-size: 1.1rem; letter-spacing: 2px; }
 
 /* ── 游戏界面 ── */
 .game-screen {
   flex: 1; display: flex; flex-direction: column;
-  padding: 12px; gap: 10px; overflow: hidden;
+  padding: 12px; gap: 10px; overflow: auto;
 }
 
 /* 对手区 */
@@ -152,11 +164,13 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 /* 公共牌区 */
 .table-area {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 12px;
+  align-items: center; justify-content: flex-start; gap: 12px;
   background: radial-gradient(ellipse at center, #1f6b38 0%, #0d4f2a 100%);
   border-radius: 14px;
   border: 2px solid rgba(255,220,80,0.15);
   min-height: 120px;
+  padding: 10px;
+  overflow: auto;
 }
 .community-cards {
   display: flex;
@@ -180,11 +194,13 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   color: var(--text-dim);
   font-weight: 600;
   text-align: center;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .community-pile-stack {
   position: relative;
-  width: 100px;
+  width: var(--pile-width);
 }
 
 .community-pile-hidden-count {
@@ -232,8 +248,8 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 }
 
 .community-pile-revealed .card {
-  width: 52px;
-  height: 74px;
+  width: var(--revealed-card-w);
+  height: var(--revealed-card-h);
   font-size: 0.85rem;
 }
 
@@ -264,18 +280,72 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   font-size: 0.9rem;
   line-height: 1.4;
   text-align: center;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  max-height: 32vh;
+  overflow: auto;
+}
+
+.table-settlement {
+  width: min(860px, calc(100% - 18px));
+  margin-top: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.52);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  max-height: min(52vh, 440px);
+}
+
+.table-settlement h3 {
+  color: var(--gold);
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.table-settlement p {
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.table-settlement .result-cards {
+  max-height: 24vh;
+  overflow: auto;
+  align-content: flex-start;
+}
+
+.table-settlement .result-card-meta {
+  white-space: pre-line;
+  max-width: 160px;
+}
+
+.table-settlement-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* 手牌区 */
 .my-hand-area {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%;
 }
 .hand-cards { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .action-panel { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: min(720px, 100%); }
 
 .action-option {
   min-width: 148px;
-  max-width: 220px;
+  max-width: 260px;
+  flex: 1 1 180px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -296,6 +366,7 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   color: var(--text-dim);
   text-align: center;
   padding: 0 4px;
+  overflow-wrap: anywhere;
 }
 
 .action-desc.is-disabled {
@@ -308,6 +379,7 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px;
   padding: 10px 12px;
+  overflow: hidden;
 }
 .my-private-panel h4 {
   font-size: 0.83rem;
@@ -322,19 +394,21 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 }
 .my-placed-item {
   min-width: 108px;
+  flex: 1 1 150px;
   font-size: 0.78rem;
   color: var(--text);
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 8px;
   padding: 6px 8px;
+  overflow-wrap: anywhere;
 }
 .my-placed-item .meta { color: var(--text-dim); font-size: 0.72rem; }
 .my-placed-item .top-tag { color: #90ffb2; font-size: 0.72rem; font-weight: 700; }
 
 /* ── 扑克牌 ── */
 .card {
-  width: 64px; height: 90px;
+  width: var(--table-card-w); height: var(--table-card-h);
   border-radius: 8px;
   background: #fff;
   border: 1px solid #ccc;
@@ -349,12 +423,12 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 .card.red   { color: #e74c3c; }
 .card.black { color: #1a1a2e; }
 .card.selected {
-  transform: translateY(-12px);
+  transform: translateY(calc(var(--table-card-w) * -0.18));
   box-shadow: 0 8px 20px rgba(240,192,64,0.6);
   border-color: var(--gold);
 }
 .community-pile-card .card.selected {
-  transform: translateY(-10px) scale(1.03);
+  transform: translateY(calc(var(--table-card-w) * -0.16)) scale(1.03);
   box-shadow: 0 10px 24px rgba(240,192,64,0.72);
 }
 .card.outgoing {
@@ -431,6 +505,55 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 .result-card h2 { font-size: 2rem; color: var(--gold); }
 .result-card p  { color: var(--text-dim); font-size: 1.05rem; }
 
+.declare-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 28;
+  background: rgba(0, 0, 0, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.declare-modal-card {
+  width: min(420px, calc(100% - 10px));
+  background: rgba(9, 28, 15, 0.95);
+  border: 1px solid rgba(255, 220, 80, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.declare-modal-card h3 {
+  color: var(--gold);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.declare-modal-card p {
+  font-size: 0.84rem;
+  color: var(--text-dim);
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.declare-modal-card input {
+  text-align: center;
+  font-size: 1rem;
+}
+
+.declare-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 .result-cards {
   display: flex;
   justify-content: center;
@@ -452,6 +575,7 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
   text-align: center;
   line-height: 1.35;
   max-width: 130px;
+  overflow-wrap: anywhere;
 }
 
 /* ── 聊天区 ── */
@@ -499,9 +623,59 @@ aside hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 8p
 /* ── 响应式 ── */
 @media (max-width: 700px) {
   aside { width: 140px; }
-  .card { width: 50px; height: 72px; font-size: 0.85rem; }
   .lang-inline { display: none; }
+  .table-settlement {
+    width: min(96vw, 96vw);
+    padding: 10px;
+  }
+  .action-panel {
+    width: 100%;
+  }
+  .phase-instruction {
+    max-height: 30vh;
+  }
+  .table-settlement {
+    max-height: 56vh;
+  }
+  .action-option {
+    min-width: 138px;
+    flex: 1 1 46%;
+  }
 }
 @media (max-width: 500px) {
   .player-sidebar, .chat-sidebar { display: none; }
+  .phase-instruction {
+    width: calc(100% - 12px);
+    font-size: 0.82rem;
+    padding: 8px 10px;
+  }
+  .table-settlement {
+    width: calc(100% - 10px);
+    gap: 8px;
+    max-height: 60vh;
+  }
+  .table-settlement h3 {
+    font-size: 0.98rem;
+  }
+  .table-settlement p {
+    font-size: 0.8rem;
+  }
+  .declare-modal-card {
+    width: calc(100% - 4px);
+    padding: 10px;
+  }
+  .table-settlement-actions {
+    gap: 8px;
+  }
+  .action-option {
+    min-width: 100%;
+    max-width: 100%;
+    flex-basis: 100%;
+  }
+  .community-cards {
+    gap: 12px;
+  }
+  .community-pile {
+    min-width: 98px;
+  }
 }
