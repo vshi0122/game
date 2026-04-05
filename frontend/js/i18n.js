@@ -118,8 +118,10 @@
 
       'game.card.red': '红',
       'game.card.black': '黑',
+      'game.card.white': '白',
       'game.card.redLabel': '红牌',
       'game.card.blackLabel': '黑牌',
+      'game.card.whiteLabel': '白牌',
 
       'game.msg.disconnected': '与服务器断开连接，正在重连…',
       'game.msg.playerLeft': '{name} 离开了房间',
@@ -223,7 +225,7 @@
       'rules.backLobby': '返回大厅',
       'rules.backGame': '返回游戏页',
       'rules.1.title': '1. 牌与开局',
-      'rules.1.1': '每位玩家开局获得 4 张牌，固定为 3 黑 1 红。',
+      'rules.1.1': '每位玩家开局获得 4 张牌，固定为 2 黑 1 红 1 白。',
       'rules.1.2': '开局阶段每位玩家必须先手动扣置 1 张牌到场上。',
       'rules.1.3': '所有玩家完成首次扣置后，进入石头剪刀布，决出首个声明玩家。',
       'rules.2.title': '2. 回合可执行动作',
@@ -357,8 +359,10 @@
 
       'game.card.red': 'Red',
       'game.card.black': 'Black',
+      'game.card.white': 'White',
       'game.card.redLabel': 'Red card',
       'game.card.blackLabel': 'Black card',
+      'game.card.whiteLabel': 'White card',
 
       'game.msg.disconnected': 'Disconnected from server. Reconnecting...',
       'game.msg.playerLeft': '{name} left the room',
@@ -462,7 +466,7 @@
       'rules.backLobby': 'Back to Lobby',
       'rules.backGame': 'Back to Game',
       'rules.1.title': '1. Cards and Setup',
-      'rules.1.1': 'Each player starts with 4 cards: 3 black and 1 red.',
+      'rules.1.1': 'Each player starts with 4 cards: 2 black, 1 red, and 1 white.',
       'rules.1.2': 'During setup, each player must place 1 face-down card on the table.',
       'rules.1.3': 'After all players place the first card, play Rock-Paper-Scissors to decide the first declarer.',
       'rules.2.title': '2. Available Actions Per Turn',

@@ -20,8 +20,8 @@ class BaseRule {
     const cards = [
       { color: 'black' },
       { color: 'black' },
-      { color: 'black' },
       { color: 'red' },
+      { color: 'white' },
     ];
     for (let i = cards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -257,8 +257,8 @@ class BaseRule {
       return true;
     }
 
-    const remainingFaceDown = tableCards.filter(item => item.faceDown).length;
-    if (revealedBlack + remainingFaceDown < declaredBlack) {
+    const remainingBlack = tableCards.filter(item => item.faceDown && item.card?.color === 'black').length;
+    if (revealedBlack + remainingBlack < declaredBlack) {
       gs.info = `${declarerName} 翻牌失败`;
       this._syncState();
       this.room.handleRoundOutcome({
@@ -308,7 +308,7 @@ class BaseRule {
    * @param {import('../Deck')} deck  - 已洗好的牌堆
    */
   onGameStart(players, deck) {
-    // 规则 1：每人 4 张牌，固定 3 黑 1 红，除了颜色无任何区别。
+    // 规则 1：每人 4 张牌，固定 2 黑 1 红 1 白，除了颜色无任何区别。
     for (const player of players) {
       player.hand = this._buildInitialHand();
       // 私发手牌（其他玩家不可见）
@@ -673,7 +673,11 @@ class BaseRule {
       }
 
       target.faceDown = false;
-      const colorText = target.card.color === 'red' ? '红' : '黑';
+      const colorText = target.card.color === 'red'
+        ? '红'
+        : target.card.color === 'white'
+          ? '白'
+          : '黑';
       this.room._broadcast('action_ack', {
         playerId,
         action,
@@ -698,7 +702,9 @@ class BaseRule {
         return;
       }
 
-      gs.revealedBlack = (gs.revealedBlack || 0) + 1;
+      if (target.card.color === 'black') {
+        gs.revealedBlack = (gs.revealedBlack || 0) + 1;
+      }
 
       this.room._broadcast('action_ack', {
         playerId,

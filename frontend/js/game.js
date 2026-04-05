@@ -330,11 +330,11 @@ function renderOpponents() {
 
 function renderMyHand() {
   myHandEl.innerHTML = state.myHand.map((card, i) => {
-    const isRed = isCardRed(card);
+    const cardClass = getCardColorClass(card);
     const colorText = getCardColorText(card);
     const selected = state.selectedCards.has(i);
     const outgoing = state.animatingPlaceCardIndex === i ? 'outgoing' : '';
-    return `<div class="card ${isRed ? 'red' : 'black'} ${selected ? 'selected' : ''} ${outgoing}" data-card-index="${i}"
+    return `<div class="card ${cardClass} ${selected ? 'selected' : ''} ${outgoing}" data-card-index="${i}"
                  onclick="toggleCard(${i})" title="${colorText}">
       <div class="card-corner-top">${colorText}</div>
       <div class="card-rank">${colorText}</div>
@@ -407,13 +407,17 @@ function renderCommunityCards(cards) {
 
     const revealedHtml = revealedCards.map((card) => {
       const index = card.globalIndex;
-      const isRed = isCardRed(card);
+      const cardClass = getCardColorClass(card);
       const colorText = getCardColorText(card);
       const isFreshReveal = flippingNow.has(index);
       const flipped = isFreshReveal ? 'flip-in' : '';
-      const impactClass = isFreshReveal ? (isRed ? 'impact-red' : 'impact-black') : '';
+      const isRed = isCardRed(card);
+      const isWhite = isCardWhite(card);
+      const impactClass = isFreshReveal
+        ? (isRed ? 'impact-red' : isWhite ? 'impact-white' : 'impact-black')
+        : '';
       const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
-      return `<div class="community-revealed-wrap ${impactClass}"><div class="card ${isRed ? 'red' : 'black'} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div></div>`;
+      return `<div class="community-revealed-wrap ${impactClass}"><div class="card ${cardClass} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div></div>`;
     }).join('');
 
     const hintClass = state.pileHintOwnerId === pile.ownerId ? 'show' : '';
@@ -459,7 +463,17 @@ function isCardRed(card) {
   return card.suit === '♥' || card.suit === '♦';
 }
 
+function isCardWhite(card) {
+  return card?.color === 'white';
+}
+
+function getCardColorClass(card) {
+  if (isCardWhite(card)) return 'white';
+  return isCardRed(card) ? 'red' : 'black';
+}
+
 function getCardColorText(card) {
+  if (isCardWhite(card)) return t('game.card.white');
   return isCardRed(card) ? t('game.card.red') : t('game.card.black');
 }
 
@@ -850,7 +864,7 @@ function renderResultCards(cards, targetEl = resultCards) {
   }
 
   targetEl.innerHTML = cards.map(card => {
-    const isRed = isCardRed(card);
+    const cardClass = getCardColorClass(card);
     const colorText = getCardColorText(card);
     const ownerName = card.ownerName || t('game.table.unknown');
     const meta = t('game.result.cardMeta', {
@@ -859,7 +873,7 @@ function renderResultCards(cards, targetEl = resultCards) {
       ownerOrder: card.ownerOrder || '-'
     });
     return `<div class="result-card-item">
-      <div class="card ${isRed ? 'red' : 'black'}" title="${colorText}">
+      <div class="card ${cardClass}" title="${colorText}">
         <div class="card-corner-top">${colorText}</div>
         <div class="card-rank">${colorText}</div>
         <div class="card-corner-bottom">${colorText}</div>
@@ -916,11 +930,16 @@ function renderMyPlacedCards(cards) {
   }
 
   myPlacedCardsEl.innerHTML = cards.map(c => {
-    const colorText = c.color === 'red' ? t('game.card.red') : t('game.card.black');
+    const colorText = getCardColorText(c);
+    const colorLabel = c.color === 'red'
+      ? t('game.card.redLabel')
+      : c.color === 'white'
+        ? t('game.card.whiteLabel')
+        : t('game.card.blackLabel');
     const topTag = topMyOrder === c.myOrder ? `<span class="top-tag">${t('game.table.top')}</span>` : '';
     return `
       <div class="my-placed-item">
-        <div>${c.color === 'red' ? t('game.card.redLabel') : t('game.card.blackLabel')} ${topTag}</div>
+        <div>${colorLabel} ${topTag}</div>
         <div class="meta">${t('game.table.myOrder', { myOrder: c.myOrder, globalOrder: c.globalOrder })}</div>
       </div>
     `;
@@ -1034,9 +1053,13 @@ function localizeServerLogMessage(message) {
   m = message.match(/^(.*) 选择了过$/);
   if (m) return t('game.log.playerPassed', { name: m[1] });
 
-  m = message.match(/^翻开了 1 张牌，颜色是(红|黑)$/);
+  m = message.match(/^翻开了 1 张牌，颜色是(红|黑|白)$/);
   if (m) {
-    const color = m[1] === '红' ? t('game.card.red') : t('game.card.black');
+    const color = m[1] === '红'
+      ? t('game.card.red')
+      : m[1] === '白'
+        ? t('game.card.white')
+        : t('game.card.black');
     return t('game.log.revealedOneColor', { color });
   }
 
