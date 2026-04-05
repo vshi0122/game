@@ -409,9 +409,11 @@ function renderCommunityCards(cards) {
       const index = card.globalIndex;
       const isRed = isCardRed(card);
       const colorText = getCardColorText(card);
-      const flipped = flippingNow.has(index) ? 'flip-in' : '';
+      const isFreshReveal = flippingNow.has(index);
+      const flipped = isFreshReveal ? 'flip-in' : '';
+      const impactClass = isFreshReveal ? (isRed ? 'impact-red' : 'impact-black') : '';
       const orderTag = `<span class="table-card-order">#${index + 1}</span>`;
-      return `<div class="card ${isRed ? 'red' : 'black'} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div>`;
+      return `<div class="community-revealed-wrap ${impactClass}"><div class="card ${isRed ? 'red' : 'black'} ${flipped}">${orderTag}<div class="card-corner-top">${colorText}</div><div class="card-rank">${colorText}</div><div class="card-corner-bottom">${colorText}</div></div></div>`;
     }).join('');
 
     const hintClass = state.pileHintOwnerId === pile.ownerId ? 'show' : '';
